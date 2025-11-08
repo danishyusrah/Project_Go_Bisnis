@@ -44,8 +44,7 @@
         <header class="flex justify-between items-center p-5 pb-3 bg-white sticky top-0 z-10 card-shadow">
             <h1 class="text-xl font-bold text-gray-900">Produk Saya</h1>
             <!-- Tombol Tambah Produk Baru -->
-            <!-- Nanti kita akan buat halaman add-product.html -->
-            <a href="#" id="add-product-button" class="flex items-center justify-center bg-indigo-600 text-white px-3 py-2 rounded-lg shadow-sm text-sm font-medium hover:bg-indigo-700 transition-colors">
+            <a href="/add-product.html" id="add-product-button" class="flex items-center justify-center bg-indigo-600 text-white px-3 py-2 rounded-lg shadow-sm text-sm font-medium hover:bg-indigo-700 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus mr-1"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
                 Tambah
             </a>
@@ -72,7 +71,7 @@
         </main>
 
         <!-- 3. Navigasi Bawah (Bottom Navigation Bar) -->
-        <!-- Disalin dari dashboard.html, dengan "Produk" ditandai sebagai aktif -->
+        <!-- [PERBAIKAN] Tautan "Laporan" dan "Pengaturan" diperbarui -->
         <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-100 bottom-nav-shadow">
             <div class="flex justify-around items-center h-16">
                 <!-- Item Nav: Home -->
@@ -82,14 +81,14 @@
                 </a>
                 
                 <!-- Item Nav: Laporan -->
-                <a href="#" class="flex flex-col items-center justify-center text-gray-500 hover:text-indigo-600 transition-colors duration-200">
+                <a href="/reports.html" class="flex flex-col items-center justify-center text-gray-500 hover:text-indigo-600 transition-colors duration-200">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bar-chart-3"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
                     <span class="text-xs font-medium mt-1">Laporan</span>
                 </a>
                 
                 <!-- Tombol Aksi Utama (CTA): Tambah Transaksi -->
                 <a href="/add-transaction.html" class="flex items-center justify-center bg-indigo-600 text-white w-14 h-14 rounded-full -mt-8 shadow-lg hover:bg-indigo-700 transition-all duration-200 ease-in-out transform hover:scale-105">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
                 </a>
                 
                 <!-- Item Nav: Produk/Stok (Aktif) -->
@@ -99,7 +98,7 @@
                 </a>
 
                 <!-- Item Nav: Pengaturan -->
-                <a href="#" class="flex flex-col items-center justify-center text-gray-500 hover:text-indigo-600 transition-colors duration-200">
+                <a href="/settings.html" class="flex flex-col items-center justify-center text-gray-500 hover:text-indigo-600 transition-colors duration-200">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 0-2 0l-.15-.08a2 2 0 0 0-2.73 2.73l.09.15a2 2 0 0 0 0 2l-.25.43a2 2 0 0 0-1.73 1H2a2 2 0 0 0-2 2v.44a2 2 0 0 0 2 2h.18a2 2 0 0 1 1.73 1l.25.43a2 2 0 0 0 0 2l-.08.15a2 2 0 0 0 2.73 2.73l.15-.08a2 2 0 0 0 2 0l.43-.25a2 2 0 0 1 1.73 1v.18a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 0 2 0l.15.08a2 2 0 0 0 2.73-2.73l-.09-.15a2 2 0 0 0 0 2l.25-.43a2 2 0 0 0 1.73-1H22a2 2 0 0 0 2-2v-.44a2 2 0 0 0-2-2h-.18a2 2 0 0 1-1.73-1l-.25-.43a2 2 0 0 0 0-2l.08-.15a2 2 0 0 0-2.73-2.73l-.15.08a2 2 0 0 0-2 0l-.43.25a2 2 0 0 1-1.73-1V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
                     <span class="text-xs font-medium mt-1">Pengaturan</span>
                 </a>

@@ -82,18 +82,18 @@
         </main>
 
         <!-- 3. Navigasi Bawah (Bottom Navigation Bar) -->
-        <!-- Disalin dari dashboard.html, dengan "Laporan" ditandai sebagai aktif -->
+        <!-- [PERBAIKAN] Tautan "Pengaturan" diperbarui -->
         <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-100 bottom-nav-shadow">
             <div class="flex justify-around items-center h-16">
                 <!-- Item Nav: Home -->
                 <a href="/dashboard.html" class="flex flex-col items-center justify-center text-gray-500 hover:text-indigo-600 transition-colors duration-200">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-home"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-home"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                     <span class="text-xs font-medium mt-1">Home</span>
                 </a>
                 
                 <!-- Item Nav: Laporan (Aktif) -->
                 <a href="/reports.html" class="flex flex-col items-center justify-center text-indigo-600 transition-colors duration-200">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bar-chart-3"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bar-chart-3"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
                     <span class="text-xs font-medium mt-1">Laporan</span>
                 </a>
                 
@@ -104,13 +104,13 @@
                 
                 <!-- Item Nav: Produk/Stok -->
                 <a href="/products.html" class="flex flex-col items-center justify-center text-gray-500 hover:text-indigo-600 transition-colors duration-200">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-package"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-package"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
                     <span class="text-xs font-medium mt-1">Produk</span>
                 </a>
 
                 <!-- Item Nav: Pengaturan -->
-                <a href="#" class="flex flex-col items-center justify-center text-gray-500 hover:text-indigo-600 transition-colors duration-200">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 0-2 0l-.15-.08a2 2 0 0 0-2.73 2.73l.09.15a2 2 0 0 0 0 2l-.25.43a2 2 0 0 0-1.73 1H2a2 2 0 0 0-2 2v.44a2 2 0 0 0 2 2h.18a2 2 0 0 1 1.73 1l.25.43a2 2 0 0 0 0 2l-.08.15a2 2 0 0 0 2.73 2.73l.15-.08a2 2 0 0 0 2 0l.43-.25a2 2 0 0 1 1.73 1v.18a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 0 2 0l.15.08a2 2 0 0 0 2.73-2.73l-.09-.15a2 2 0 0 0 0 2l.25-.43a2 2 0 0 0 1.73-1H22a2 2 0 0 0 2-2v-.44a2 2 0 0 0-2-2h-.18a2 2 0 0 1-1.73-1l-.25-.43a2 2 0 0 0 0-2l.08-.15a2 2 0 0 0-2.73-2.73l-.15.08a2 2 0 0 0-2 0l-.43.25a2 2 0 0 1-1.73-1V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                <a href="/settings.html" class="flex flex-col items-center justify-center text-gray-500 hover:text-indigo-600 transition-colors duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 0-2 0l-.15-.08a2 2 0 0 0-2.73 2.73l.09.15a2 2 0 0 0 0 2l-.25.43a2 2 0 0 0-1.73 1H2a2 2 0 0 0-2 2v.44a2 2 0 0 0 2 2h.18a2 2 0 0 1 1.73 1l.25.43a2 2 0 0 0 0 2l-.08.15a2 2 0 0 0 2.73 2.73l.15-.08a2 2 0 0 0 2 0l.43-.25a2 2 0 0 1 1.73 1v.18a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 0 2 0l.15.08a2 2 0 0 0 2.73-2.73l-.09-.15a2 2 0 0 0 0 2l.25-.43a2 2 0 0 0 1.73-1H22a2 2 0 0 0 2-2v-.44a2 2 0 0 0-2-2h-.18a2 2 0 0 1-1.73-1l-.25-.43a2 2 0 0 0 0-2l.08-.15a2 2 0 0 0-2.73-2.73l-.15.08a2 2 0 0 0-2 0l-.43.25a2 2 0 0 1-1.73-1V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
                     <span class="text-xs font-medium mt-1">Pengaturan</span>
                 </a>
             </div>
