@@ -19,13 +19,21 @@ document.addEventListener("DOMContentLoaded", () => {
     const userFullNameEl = document.getElementById("userFullName");
     const netProfitEl = document.getElementById("netProfit");
     const netProfitLabelEl = document.getElementById("netProfitLabel"); // Label Laba Bersih
-    const totalRevenueEl = document.getElementById("totalRevenue");     // <-- ID BARU
+    const totalRevenueEl = document.getElementById("totalRevenue");
     const totalExpenseEl = document.getElementById("totalExpense");
     const dateRangeLabelEl = document.getElementById("dateRangeLabel"); // Label rentang tanggal
-    const revenueLabelEl = document.getElementById("revenueLabel");     // <-- ID BARU
+    const revenueLabelEl = document.getElementById("revenueLabel");
     const expenseLabelEl = document.getElementById("expenseLabel");
     const transactionListEl = document.getElementById("transactionList");
     const logoutButton = document.getElementById("logoutButton");
+
+    // --- [PERBAIKAN] ---
+    // Menambahkan elemen Laba Kotor (Gross Profit) dan Modal (COGS)
+    const grossProfitEl = document.getElementById("grossProfit");
+    const totalCOGSEl = document.getElementById("totalCOGS");
+    const grossProfitLabelEl = document.getElementById("grossProfitLabel");
+    const cogsLabelEl = document.getElementById("cogsLabel");
+    // --- [AKHIR PERBAIKAN] ---
     
     // [DIUBAH] Ambil elemen filter dropdown baru
     const filterMonthEl = document.getElementById("filter-month");
@@ -40,10 +48,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const downloadPdfButton = document.getElementById("downloadPdfButton");
     const dashboardContentEl = document.getElementById("dashboard-content");
     const pdfLoadingOverlay = document.getElementById("pdfLoadingOverlay");
-
-    // [DIHAPUS] Variabel state lama tidak diperlukan lagi
-    // let currentFilter = "this-month"; 
-    // let currentFilterLabel = "Bulan Ini";
 
     // --- 2. Fungsi Helper (Sangat Profesional) ---
 
@@ -144,6 +148,11 @@ document.addEventListener("DOMContentLoaded", () => {
         netProfitLabelEl.textContent = `Laba Bersih (${filterLabel})`;
         revenueLabelEl.textContent = filterLabel;
         expenseLabelEl.textContent = filterLabel;
+        // --- [PERBAIKAN] ---
+        // Update label untuk Laba Kotor dan COGS
+        grossProfitLabelEl.textContent = filterLabel;
+        cogsLabelEl.textContent = filterLabel;
+        // --- [AKHIR PERBAIKAN] ---
 
         // 6. Format ke RFC3339 (ISO string) yang dimengerti Go
         const fromQuery = `from=${startDate.toISOString()}`;
@@ -178,13 +187,23 @@ document.addEventListener("DOMContentLoaded", () => {
             totalRevenueEl.textContent = formatCurrency(stats.total_revenue); // Pendapatan Kotor
             totalExpenseEl.textContent = formatCurrency(stats.total_expense); // Biaya Operasional
             
+            // --- [PERBAIKAN] ---
+            // Menampilkan data Laba Kotor dan COGS ke HTML
+            grossProfitEl.textContent = formatCurrency(stats.gross_profit); // <-- BARU
+            totalCOGSEl.textContent = formatCurrency(stats.total_cogs);     // <-- BARU
+            // --- [AKHIR PERBAIKAN] ---
+            
             // Label sudah di-update oleh getDateRangeQuery()
 
         } catch (error) {
             console.error("Error loading dashboard stats:", error);
             netProfitEl.textContent = "Error";
-            totalRevenueEl.textContent = "Error"; // <-- Diubah
+            totalRevenueEl.textContent = "Error";
             totalExpenseEl.textContent = "Error";
+            // --- [PERBAIKAN] ---
+            grossProfitEl.textContent = "Error"; // <-- BARU
+            totalCOGSEl.textContent = "Error";     // <-- BARU
+            // --- [AKHIR PERBAIKAN] ---
         }
     };
 

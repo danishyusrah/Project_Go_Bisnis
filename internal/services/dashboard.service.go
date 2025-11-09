@@ -26,15 +26,16 @@ func (s *DashboardService) GetDashboardStats(userID uint, startTime time.Time, e
 	log.Printf("Menghitung statistik dashboard baru (dengan COGS) untuk UserID %d dari %s hingga %s", userID, startTime, endTime)
 
 	// --- 1. Kalkulasi Pemasukan (Revenue) dan Modal (COGS) ---
-	// Query ini sudah benar, karena HANYA mencari 'models.Income'
 	type RevenueCOGSResult struct {
 		TotalRevenue float64 `gorm:"column:total_revenue"`
 		TotalCOGS    float64 `gorm:"column:total_cogs"`
 	}
 	var revenueCOGS RevenueCOGSResult
 
+	// [PERBAIKAN KEDUA]
+	// Query ini disederhanakan untuk memastikan SUM(T_Items.total_cogs) dihitung dengan benar.
 	err := db.Model(&models.Transaction{}).
-		Select("COALESCE(SUM(CASE WHEN transactions.type = ? THEN transactions.total_amount ELSE 0 END), 0) as total_revenue, COALESCE(SUM(T_Items.total_cogs), 0) as total_cogs", models.Income).
+		Select("COALESCE(SUM(transactions.total_amount), 0) as total_revenue, COALESCE(SUM(T_Items.total_cogs), 0) as total_cogs").
 		Joins("LEFT JOIN (SELECT transaction_id, SUM(purchase_price * quantity) as total_cogs FROM transaction_items GROUP BY transaction_id) AS T_Items ON T_Items.transaction_id = transactions.id").
 		Where("transactions.user_id = ? AND transactions.type = ? AND transactions.created_at BETWEEN ? AND ?", userID, models.Income, startTime, endTime).
 		Scan(&revenueCOGS).Error
@@ -47,7 +48,6 @@ func (s *DashboardService) GetDashboardStats(userID uint, startTime time.Time, e
 	stats.TotalCOGS = revenueCOGS.TotalCOGS
 
 	// --- 2. Query untuk menghitung Total Pengeluaran (Biaya Operasional) ---
-	// Query ini sudah benar, karena HANYA mencari 'models.Expense'
 	type SumResult struct {
 		Total float64
 	}
@@ -63,8 +63,6 @@ func (s *DashboardService) GetDashboardStats(userID uint, startTime time.Time, e
 
 	// --- 3. Query untuk menghitung Jumlah Transaksi (Pemasukan + Pengeluaran) ---
 	var count int64
-	// [PERUBAHAN DI SINI]
-	// Kita tambahkan filter `type IN (?, ?)` agar TIDAK menghitung 'CAPITAL'
 	if err := db.Model(&models.Transaction{}).
 		Where("user_id = ? AND type IN (?, ?) AND created_at BETWEEN ? AND ?", userID, models.Income, models.Expense, startTime, endTime).
 		Count(&count).Error; err != nil {
@@ -107,7 +105,6 @@ func (s *DashboardService) GetDashboardChartData(userID uint, startTime time.Tim
 	var incomeData []DailyIncomeCOGS
 
 	// Query 1: Ambil data Pendapatan (Revenue) dan Modal (COGS) harian
-	// Query ini sudah benar, karena HANYA mencari 'models.Income'
 	err := db.Model(&models.Transaction{}).
 		Select("DATE(transactions.created_at) as day, SUM(transactions.total_amount) as revenue, SUM(T_Items.total_cogs) as cogs").
 		Joins("LEFT JOIN (SELECT transaction_id, SUM(purchase_price * quantity) as total_cogs FROM transaction_items GROUP BY transaction_id) AS T_Items ON T_Items.transaction_id = transactions.id").
@@ -129,7 +126,6 @@ func (s *DashboardService) GetDashboardChartData(userID uint, startTime time.Tim
 	var expenseData []DailyExpense
 
 	// Query 2: Ambil data Pengeluaran (Expense) harian
-	// Query ini sudah benar, karena HANYA mencari 'models.Expense'
 	err = db.Model(&models.Transaction{}).
 		Select("DATE(created_at) as day, SUM(total_amount) as expense").
 		Where("user_id = ? AND type = ? AND created_at BETWEEN ? AND ?", userID, models.Expense, startTime, endTime).

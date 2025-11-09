@@ -1,1 +1,2 @@
 go run cmd/server/main.go
+Refresh (Ctrl+Shift+R)

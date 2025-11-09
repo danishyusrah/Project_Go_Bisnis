@@ -155,23 +155,27 @@
     <div class="max-w-md mx-auto bg-white min-h-screen card-shadow overflow-hidden lg:flex-1 lg:max-w-none lg:mx-0">
         
         <!-- 1. Header Aplikasi -->
-        <!-- [DIUBAH] Tombol Logout dipindah ke header desktop yang lebih besar -->
+        <!-- [PERBAIKAN IKON DISINI] -->
         <header class="flex justify-between items-center p-5 pb-3 bg-white">
             <div>
                 <p class="text-sm text-gray-500 font-medium">Halo,</p>
                 <h1 id="userFullName" class="text-xl font-bold text-gray-900">Memuat...</h1>
             </div>
             
-            <!-- Tombol Download PDF (dari update sebelumnya) -->
-            <button id="downloadPdfButton" class="p-2 rounded-full text-indigo-600 hover:bg-indigo-100" title="Download Laporan PDF">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-            </button>
-            
-            <!-- Tombol Logout (dipindah dari bawah) -->
-            <button id="logoutButton" class="p-2 rounded-full text-gray-600 hover:bg-gray-100 transition-colors duration-200" title="Logout">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-log-out"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-            </button>
+            <!-- [PERBAIKAN] Bungkus kedua tombol dalam satu div -->
+            <div class="flex items-center space-x-2">
+                <!-- Tombol Download PDF -->
+                <button id="downloadPdfButton" class="p-2 rounded-full text-indigo-600 hover:bg-indigo-100" title="Download Laporan PDF">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                </button>
+                
+                <!-- Tombol Logout -->
+                <button id="logoutButton" class="p-2 rounded-full text-gray-600 hover:bg-gray-100 transition-colors duration-200" title="Logout">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-log-out"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+                </button>
+            </div>
         </header>
+        <!-- [AKHIR PERBAIKAN IKON] -->
 
         <!-- 2. Konten Utama (Dashboard) -->
         <!-- [DIUBAH] Tambahkan lg:p-8 untuk padding lebih besar di desktop -->
