@@ -17,7 +17,7 @@
         .card-shadow {
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03);
         }
-        /* Styling untuk toggle Pemasukan/Pengeluaran */
+        /* Styling untuk toggle Pemasukan/Pengeluaran/Modal */
         input[type="radio"]:checked + label {
             background-color: #4f46e5; /* indigo-600 */
             color: white;
@@ -46,6 +46,7 @@
             <!-- Tipe Transaksi (Toggle) -->
             <div class="bg-white p-4 rounded-xl card-shadow">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Tipe Transaksi</label>
+                <!-- [DIUBAH] Menjadi 3 Opsi -->
                 <div class="flex rounded-lg border border-gray-200">
                     <input type="radio" id="type_income" name="type" value="INCOME" class="hidden" checked>
                     <label for="type_income" class="flex-1 text-center py-2 px-4 rounded-l-lg cursor-pointer transition-colors duration-200">
@@ -53,8 +54,14 @@
                     </label>
                     
                     <input type="radio" id="type_expense" name="type" value="EXPENSE" class="hidden">
-                    <label for="type_expense" class="flex-1 text-center py-2 px-4 rounded-r-lg cursor-pointer transition-colors duration-200">
+                    <label for="type_expense" class="flex-1 text-center py-2 px-4 cursor-pointer transition-colors duration-200 border-l border-r">
                         Pengeluaran
+                    </label>
+
+                    <!-- [BARU] Opsi Modal -->
+                    <input type="radio" id="type_capital" name="type" value="CAPITAL" class="hidden">
+                    <label for="type_capital" class="flex-1 text-center py-2 px-4 rounded-r-lg cursor-pointer transition-colors duration-200">
+                        Modal
                     </label>
                 </div>
             </div>
@@ -63,16 +70,14 @@
             <div class="bg-white p-4 rounded-xl card-shadow space-y-4">
                 <h2 class="text-lg font-semibold text-gray-900">Detail</h2>
                 
-                <!-- [DIUBAH] Mengganti Input Teks menjadi Dropdown Select -->
-                <div>
+                <!-- [DIUBAH] Grup Pelanggan (agar bisa disembunyikan) -->
+                <div id="customer-group">
                     <div class="flex justify-between items-center">
                         <label id="customerLabel" for="customer_id" class="block text-sm font-medium text-gray-700">Pelanggan/Supplier</label>
-                        <!-- Tautan ini akan kita buat nanti, tapi UI-nya kita siapkan -->
                         <a href="/customers.html" class="text-sm font-medium text-indigo-600 hover:text-indigo-500">
                             + Pelanggan Baru
                         </a>
                     </div>
-                    <!-- ID 'customer_id' akan diisi oleh JS -->
                     <select id="customer_id" name="customer_id"
                         class="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                         <option value="">-- Umum (Tanpa Pelanggan) --</option>
@@ -80,16 +85,25 @@
                     </select>
                 </div>
 
-                <div>
+                <!-- [BARU] Grup Jumlah Modal (disembunyikan by default) -->
+                <div id="capital-amount-group" class="hidden">
+                    <label for="capital_amount" class="block text-sm font-medium text-gray-700">Jumlah Modal</label>
+                    <input type="number" id="capital_amount" name="capital_amount" min="0" value="0"
+                        class="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        placeholder="Cth: 200000">
+                </div>
+
+                <!-- Grup Catatan (selalu terlihat) -->
+                <div id="notes-group">
                     <label for="notes" class="block text-sm font-medium text-gray-700">Catatan (Opsional)</label>
                     <textarea id="notes" name="notes" rows="2"
                         class="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                        placeholder="Cth: Pembayaran lunas"></textarea>
+                        placeholder="Cth: Modal awal buka warung"></textarea>
                 </div>
             </div>
 
-            <!-- Daftar Item (Dinamis) -->
-            <div class="bg-white p-4 rounded-xl card-shadow space-y-4">
+            <!-- [DIUBAH] Daftar Item (agar bisa disembunyikan) -->
+            <div id="item-section" class="bg-white p-4 rounded-xl card-shadow space-y-4">
                 <div class="flex justify-between items-center">
                     <h2 class="text-lg font-semibold text-gray-900">Item Transaksi</h2>
                     <!-- Tombol untuk menambah baris item baru -->
@@ -104,13 +118,10 @@
                     <div class="item-row grid grid-cols-6 gap-2 items-end p-2 border rounded-lg">
                         <div class="col-span-6">
                             <label class="block text-xs font-medium text-gray-700">Nama Item / Produk</label>
-                            <!-- 'product-select' akan diisi oleh JS jika Pemasukan -->
                             <select name="product_id" class="product-select mt-1 block w-full text-sm py-2 px-2 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                                 <option value="">-- Pilih Produk --</option>
-                                <!-- Opsi "Lainnya" untuk item non-produk -->
                                 <option value="other">Lainnya (Nama Kustom)</option> 
                             </select>
-                            <!-- 'product-name-custom' untuk input manual -->
                             <input type="text" name="product_name" class="product-name-custom mt-1 block w-full text-sm py-2 px-2 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 hidden" placeholder="Nama Item Kustom">
                         </div>
                         <div class="col-span-2">
@@ -135,9 +146,9 @@
                     Error: Gagal menyimpan.
                 </div>
 
-                <div class="flex justify-between items-center mb-3">
+                <!-- [DIUBAH] Grup Total (agar bisa disembunyikan) -->
+                <div id="item-total-group" class="flex justify-between items-center mb-3">
                     <span class="text-lg font-medium text-gray-600">Total:</span>
-                    <!-- ID 'totalAmount' akan di-update oleh JS -->
                     <span id="totalAmount" class="text-2xl font-bold text-gray-900">Rp 0</span>
                 </div>
                 
@@ -152,13 +163,7 @@
 
     <!-- 
         JavaScript kustom untuk halaman ini.
-        Akan menangani:
-        1. Pengecekan token (Guard)
-        2. Memuat daftar produk KE <select>
-        3. [BARU] Memuat daftar pelanggan KE <select>
-        4. Menambah/menghapus baris item secara dinamis
-        5. Menghitung total secara otomatis
-        6. [BARU] Mengirim 'customer_id' ke API /api/v1/transactions
+        Akan di-update di file selanjutnya.
     -->
     <script src="/static/add-transaction.js"></script>
 

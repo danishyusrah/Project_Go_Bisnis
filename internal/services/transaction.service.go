@@ -20,6 +20,7 @@ func NewTransactionService() *TransactionService {
 }
 
 // CreateTransaction adalah logika bisnis untuk membuat transaksi baru
+// [DIUBAH] Logika dirombak untuk menangani 'CAPITAL'
 func (s *TransactionService) CreateTransaction(input dto.CreateTransactionInput, userID uint) (models.Transaction, error) {
 	db := database.DB
 	var totalAmount float64 = 0
@@ -29,8 +30,13 @@ func (s *TransactionService) CreateTransaction(input dto.CreateTransactionInput,
 	if tx.Error != nil {
 		return models.Transaction{}, errors.New("gagal memulai database transaction")
 	}
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
 
-	// [BARU] Validasi CustomerID jika ada
+	// Validasi CustomerID jika ada (Berlaku untuk semua tipe)
 	if input.CustomerID != nil {
 		var customer models.Customer
 		if err := tx.First(&customer, *input.CustomerID).Error; err != nil {
@@ -43,86 +49,104 @@ func (s *TransactionService) CreateTransaction(input dto.CreateTransactionInput,
 		}
 	}
 
-	for _, itemInput := range input.Items {
-		totalAmount += itemInput.UnitPrice * float64(itemInput.Quantity)
+	// --- Logika Baru Berdasarkan Tipe Transaksi ---
 
-		// --- LOGIKA STOK OTOMATIS ---
+	if input.Type == models.Capital {
+		// --- LOGIKA UNTUK MODAL (CAPITAL) ---
 
-		// 2a. Jika ini adalah Transaksi Pemasukan (Penjualan) DAN ada ProductID
-		// LOGIKA PENGURANGAN STOK (SUDAH ADA)
-		if input.Type == models.Income && itemInput.ProductID != nil {
-			var product models.Product
-			if err := tx.Set("gorm:query_option", "FOR UPDATE").First(&product, *itemInput.ProductID).Error; err != nil {
-				tx.Rollback()
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return models.Transaction{}, fmt.Errorf("produk ID %d tidak ditemukan", *itemInput.ProductID)
-				}
-				return models.Transaction{}, err
-			}
-
-			if product.UserID != userID {
-				tx.Rollback()
-				return models.Transaction{}, fmt.Errorf("akses ditolak: produk ID %d bukan milik Anda", *itemInput.ProductID)
-			}
-
-			if product.Stock < itemInput.Quantity {
-				tx.Rollback()
-				return models.Transaction{}, fmt.Errorf("stok tidak cukup untuk produk: %s (sisa: %d)", product.Name, product.Stock)
-			}
-
-			// Kurangi stok
-			newStock := product.Stock - itemInput.Quantity
-			if err := tx.Model(&product).Update("stock", newStock).Error; err != nil {
-				tx.Rollback()
-				return models.Transaction{}, fmt.Errorf("gagal memperbarui stok untuk produk ID %d", *itemInput.ProductID)
-			}
-
-			// [BARU] 2b. Jika ini adalah Transaksi Pengeluaran (Restock) DAN ada ProductID
-			// LOGIKA PENAMBAHAN STOK (RESTOCK)
-		} else if input.Type == models.Expense && itemInput.ProductID != nil {
-			var product models.Product
-			// Kunci record produk
-			if err := tx.Set("gorm:query_option", "FOR UPDATE").First(&product, *itemInput.ProductID).Error; err != nil {
-				tx.Rollback()
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					// Jika produk tidak ditemukan saat restock, itu masalah
-					return models.Transaction{}, fmt.Errorf("produk ID %d tidak ditemukan untuk restock", *itemInput.ProductID)
-				}
-				return models.Transaction{}, err
-			}
-
-			// Cek kepemilikan produk
-			if product.UserID != userID {
-				tx.Rollback()
-				return models.Transaction{}, fmt.Errorf("akses ditolak: produk ID %d bukan milik Anda", *itemInput.ProductID)
-			}
-
-			// Tambah stok
-			newStock := product.Stock + itemInput.Quantity
-			if err := tx.Model(&product).Update("stock", newStock).Error; err != nil {
-				tx.Rollback()
-				return models.Transaction{}, fmt.Errorf("gagal memperbarui stok (restock) untuk produk ID %d", *itemInput.ProductID)
-			}
+		// 1. Validasi: Modal tidak boleh punya item
+		if len(input.Items) > 0 {
+			tx.Rollback()
+			return models.Transaction{}, errors.New("transaksi 'Modal' tidak boleh memiliki item")
+		}
+		// 2. Validasi: Modal harus punya TotalAmount
+		if input.TotalAmount <= 0 {
+			tx.Rollback()
+			return models.Transaction{}, errors.New("transaksi 'Modal' harus memiliki total_amount > 0")
 		}
 
-		// --- AKHIR LOGIKA STOK ---
+		// 3. Set TotalAmount langsung dari input
+		totalAmount = input.TotalAmount
+		// transactionItems tetap kosong (slice nil)
 
-		newItem := models.TransactionItem{
-			ProductID:   itemInput.ProductID,
-			ProductName: itemInput.ProductName,
-			Quantity:    itemInput.Quantity,
-			UnitPrice:   itemInput.UnitPrice,
+	} else if input.Type == models.Income || input.Type == models.Expense {
+		// --- LOGIKA UNTUK PEMASUKAN (INCOME) & PENGELUARAN (EXPENSE) ---
+
+		// 1. Validasi: Tipe ini WAJIB punya item
+		if len(input.Items) == 0 {
+			tx.Rollback()
+			return models.Transaction{}, errors.New("transaksi 'Pemasukan' atau 'Pengeluaran' harus memiliki minimal 1 item")
 		}
-		transactionItems = append(transactionItems, newItem)
+
+		// 2. Proses setiap item (Logika lama Anda sudah benar)
+		for _, itemInput := range input.Items {
+			totalAmount += itemInput.UnitPrice * float64(itemInput.Quantity)
+			var itemPurchasePrice float64 = 0
+
+			// Logika Stok (Hanya jika ProductID ada)
+			if itemInput.ProductID != nil {
+				var product models.Product
+				if err := tx.Set("gorm:query_option", "FOR UPDATE").First(&product, *itemInput.ProductID).Error; err != nil {
+					tx.Rollback()
+					if errors.Is(err, gorm.ErrRecordNotFound) {
+						return models.Transaction{}, fmt.Errorf("produk ID %d tidak ditemukan", *itemInput.ProductID)
+					}
+					return models.Transaction{}, err
+				}
+
+				if product.UserID != userID {
+					tx.Rollback()
+					return models.Transaction{}, fmt.Errorf("akses ditolak: produk ID %d bukan milik Anda", *itemInput.ProductID)
+				}
+
+				// Logika PENGURANGAN STOK (Penjualan)
+				if input.Type == models.Income {
+					if product.Stock < itemInput.Quantity {
+						tx.Rollback()
+						return models.Transaction{}, fmt.Errorf("stok tidak cukup untuk produk: %s (sisa: %d)", product.Name, product.Stock)
+					}
+					itemPurchasePrice = product.PurchasePrice // Ambil harga modal
+					newStock := product.Stock - itemInput.Quantity
+					if err := tx.Model(&product).Update("stock", newStock).Error; err != nil {
+						tx.Rollback()
+						return models.Transaction{}, fmt.Errorf("gagal memperbarui stok untuk produk ID %d", *itemInput.ProductID)
+					}
+				}
+				// Logika PENAMBAHAN STOK (Restock)
+				if input.Type == models.Expense {
+					newStock := product.Stock + itemInput.Quantity
+					if err := tx.Model(&product).Update("stock", newStock).Error; err != nil {
+						tx.Rollback()
+						return models.Transaction{}, fmt.Errorf("gagal memperbarui stok (restock) untuk produk ID %d", *itemInput.ProductID)
+					}
+				}
+			}
+
+			// Buat item transaksi
+			newItem := models.TransactionItem{
+				ProductID:     itemInput.ProductID,
+				ProductName:   itemInput.ProductName,
+				Quantity:      itemInput.Quantity,
+				UnitPrice:     itemInput.UnitPrice,
+				PurchasePrice: itemPurchasePrice, // Simpan harga modal
+			}
+			transactionItems = append(transactionItems, newItem)
+		}
+
+	} else {
+		// --- Tipe tidak valid ---
+		tx.Rollback()
+		return models.Transaction{}, errors.New("tipe transaksi tidak valid")
 	}
 
+	// --- Pembuatan Transaksi (Berlaku untuk semua tipe) ---
 	newTransaction := models.Transaction{
 		UserID:      userID,
 		Type:        input.Type,
-		TotalAmount: totalAmount,
+		TotalAmount: totalAmount, // Sudah diisi oleh logika di atas
 		CustomerID:  input.CustomerID,
 		Notes:       input.Notes,
-		Items:       transactionItems,
+		Items:       transactionItems, // Akan kosong jika tipenya 'CAPITAL'
 	}
 
 	if err := tx.Create(&newTransaction).Error; err != nil {

@@ -14,17 +14,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Variabel global untuk menyimpan daftar
     let userProducts = [];
-    let userCustomers = []; // <-- BARU: Untuk menyimpan daftar pelanggan
+    let userCustomers = [];
 
     // Ambil elemen-elemen form
     const transactionForm = document.getElementById("transactionForm");
+    
+    // [DIUBAH] Ambil semua elemen UI yang akan di-toggle
     const typeIncome = document.getElementById("type_income");
     const typeExpense = document.getElementById("type_expense");
+    const typeCapital = document.getElementById("type_capital"); // <-- BARU
+
+    const customerGroup = document.getElementById("customer-group"); // <-- BARU
     const customerLabel = document.getElementById("customerLabel");
-    const customerSelectEl = document.getElementById("customer_id"); // <-- BARU: Dropdown pelanggan
+    const customerSelectEl = document.getElementById("customer_id"); 
+    
+    const capitalAmountGroup = document.getElementById("capital-amount-group"); // <-- BARU
+    const capitalAmountInput = document.getElementById("capital_amount"); // <-- BARU
+    
+    const notesGroup = document.getElementById("notes-group"); // <-- BARU
+
+    const itemSection = document.getElementById("item-section"); // <-- BARU
     const itemList = document.getElementById("item-list");
     const addItemButton = document.getElementById("add-item-button");
+    
+    const itemTotalGroup = document.getElementById("item-total-group"); // <-- BARU
     const totalAmountEl = document.getElementById("totalAmount");
+    
     const errorMessageEl = document.getElementById("errorMessage");
     const submitButton = document.getElementById("submitButton");
 
@@ -86,7 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     /**
-     * [BARU] Memuat pelanggan milik user dari API
+     * Memuat pelanggan milik user dari API
      */
     const loadCustomers = async () => {
         try {
@@ -126,7 +141,7 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     /**
-     * [BARU] Mengisi <select> pelanggan
+     * Mengisi <select> pelanggan
      */
     const updateCustomerDropdown = () => {
         if (!customerSelectEl) return;
@@ -151,36 +166,63 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /**
-     * Meng-update UI berdasarkan tipe transaksi (INCOME/EXPENSE)
+     * [DIUBAH TOTAL] Meng-update UI berdasarkan tipe transaksi (INCOME/EXPENSE/CAPITAL)
      */
     const updateFormForType = () => {
         const isIncome = typeIncome.checked;
-        
-        // [DIUBAH] Label tetap diubah, tapi dropdown pelanggan/supplier tetap terlihat
-        customerLabel.textContent = isIncome ? "Nama Pelanggan" : "Nama Supplier / Toko";
-        
-        const itemRows = document.querySelectorAll(".item-row");
-        itemRows.forEach(row => {
-            const productSelect = row.querySelector(".product-select");
-            const customNameInput = row.querySelector(".product-name-custom");
+        const isExpense = typeExpense.checked;
+        const isCapital = typeCapital.checked; // <-- BARU
+
+        const notesLabel = notesGroup.querySelector("label");
+
+        if (isCapital) {
+            // --- TAMPILAN UNTUK MODAL ---
+            customerGroup.classList.add("hidden");
+            itemSection.classList.add("hidden");
+            itemTotalGroup.classList.add("hidden");
+
+            capitalAmountGroup.classList.remove("hidden");
+            notesLabel.textContent = "Catatan (Cth: Modal awal buka warung)";
+            submitButton.textContent = "Simpan Setoran Modal";
+
+        } else {
+            // --- TAMPILAN UNTUK PEMASUKAN / PENGELUARAN ---
+            customerGroup.classList.remove("hidden");
+            itemSection.classList.remove("hidden");
+            itemTotalGroup.classList.remove("hidden");
+            
+            capitalAmountGroup.classList.add("hidden");
+            capitalAmountInput.value = 0; // Reset nilai modal
+            
+            // Atur label pelanggan
+            customerLabel.textContent = isIncome ? "Nama Pelanggan" : "Nama Supplier / Toko";
+            notesLabel.textContent = "Catatan (Opsional)";
+            submitButton.textContent = "Simpan Transaksi";
+
+            // Logika dropdown item (sama seperti sebelumnya)
+            const itemRows = document.querySelectorAll(".item-row");
+            itemRows.forEach(row => {
+                const productSelect = row.querySelector(".product-select");
+                const customNameInput = row.querySelector(".product-name-custom");
+                
+                if (isIncome) {
+                    // Tipe PEMASUKAN: Tampilkan dropdown produk
+                    productSelect.classList.remove("hidden");
+                    if (productSelect.value !== "other") {
+                        customNameInput.classList.add("hidden");
+                    }
+                } else {
+                    // Tipe PENGELUARAN: Sembunyikan dropdown, paksa input manual
+                    productSelect.value = "other";
+                    productSelect.classList.add("hidden");
+                    customNameInput.classList.remove("hidden");
+                    customNameInput.value = ""; // Kosongkan input kustom
+                }
+            });
             
             if (isIncome) {
-                // Tipe PEMASUKAN: Tampilkan dropdown produk
-                productSelect.classList.remove("hidden");
-                if (productSelect.value !== "other") {
-                    customNameInput.classList.add("hidden");
-                }
-            } else {
-                // Tipe PENGELUARAN: Sembunyikan dropdown, paksa input manual
-                productSelect.value = "other";
-                productSelect.classList.add("hidden");
-                customNameInput.classList.remove("hidden");
-                customNameInput.value = ""; // Kosongkan input kustom
+                updateProductDropdowns();
             }
-        });
-        
-        if (isIncome) {
-            updateProductDropdowns();
         }
     };
 
@@ -294,9 +336,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    // Listener untuk toggle Pemasukan/Pengeluaran
+    // [DIUBAH] Listener untuk semua toggle
     typeIncome.addEventListener("change", updateFormForType);
     typeExpense.addEventListener("change", updateFormForType);
+    typeCapital.addEventListener("change", updateFormForType); // <-- BARU
 
     // Listener untuk tombol "Tambah Item"
     addItemButton.addEventListener("click", addNewItemRow);
@@ -304,7 +347,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Attach listener ke baris item pertama yang sudah ada
     attachItemRowListeners(document.querySelector(".item-row"));
 
-    // Listener untuk Form Submit
+    // [DIUBAH TOTAL] Listener untuk Form Submit
     transactionForm.addEventListener("submit", async (event) => {
         event.preventDefault();
         
@@ -313,56 +356,78 @@ document.addEventListener("DOMContentLoaded", () => {
         errorMessageEl.classList.add("hidden");
 
         try {
-            // Kumpulkan data dari form
+            // Kumpulkan data umum
             const formData = new FormData(transactionForm);
             const type = formData.get("type");
             const notes = formData.get("notes");
+            
+            let payload = {}; // Siapkan payload kosong
 
-            // [DIUBAH] Ambil customer_id, ubah ke null jika string kosong
-            const customerIDRaw = formData.get("customer_id");
-            const customerID = customerIDRaw ? parseInt(customerIDRaw, 10) : null;
-            
-            const items = [];
-            const itemRows = document.querySelectorAll(".item-row");
-            
-            for (const row of itemRows) {
-                const productSelect = row.querySelector(".product-select");
-                const customNameInput = row.querySelector(".product-name-custom");
+            if (type === "CAPITAL") {
+                // --- [BARU] Payload untuk Tipe Modal ---
+                const capitalAmount = parseFloat(formData.get("capital_amount"));
                 
-                let productId = null;
-                if (productSelect.value && productSelect.value !== "other") {
-                    productId = parseInt(productSelect.value, 10);
+                if (capitalAmount <= 0) {
+                    throw new Error("Jumlah modal harus lebih besar dari 0.");
                 }
                 
-                const productName = customNameInput.value;
-                const quantity = parseInt(row.querySelector('input[name="quantity"]').value, 10);
-                const unitPrice = parseFloat(row.querySelector('input[name="unit_price"]').value);
+                payload = {
+                    type: type,
+                    notes: notes,
+                    total_amount: capitalAmount, // Ambil dari input modal
+                    // [PERBAIKAN] Hapus `items: []` agar tidak gagal validasi 'min=1'
+                    customer_id: null // Modal tidak punya pelanggan
+                };
 
-                if (!productName || quantity <= 0 || unitPrice < 0) {
-                    throw new Error("Data item tidak valid. Pastikan semua nama, jumlah, dan harga terisi dengan benar.");
+            } else if (type === "INCOME" || type === "EXPENSE") {
+                // --- [LAMA] Payload untuk Tipe Pemasukan/Pengeluaran ---
+                const customerIDRaw = formData.get("customer_id");
+                const customerID = customerIDRaw ? parseInt(customerIDRaw, 10) : null;
+                
+                const items = [];
+                const itemRows = document.querySelectorAll(".item-row");
+                
+                for (const row of itemRows) {
+                    const productSelect = row.querySelector(".product-select");
+                    const customNameInput = row.querySelector(".product-name-custom");
+                    
+                    let productId = null;
+                    if (productSelect.value && productSelect.value !== "other") {
+                        productId = parseInt(productSelect.value, 10);
+                    }
+                    
+                    const productName = customNameInput.value;
+                    const quantity = parseInt(row.querySelector('input[name="quantity"]').value, 10);
+                    const unitPrice = parseFloat(row.querySelector('input[name="unit_price"]').value);
+
+                    if (!productName || quantity <= 0 || unitPrice < 0) {
+                        throw new Error("Data item tidak valid. Pastikan semua nama, jumlah, dan harga terisi dengan benar.");
+                    }
+
+                    items.push({
+                        product_id: productId,
+                        product_name: productName,
+                        quantity: quantity,
+                        unit_price: unitPrice,
+                    });
                 }
 
-                items.push({
-                    product_id: productId,
-                    product_name: productName,
-                    quantity: quantity,
-                    unit_price: unitPrice,
-                });
-            }
+                if (items.length === 0) {
+                    throw new Error("Transaksi Pemasukan/Pengeluaran harus memiliki minimal 1 item.");
+                }
 
-            if (items.length === 0) {
-                throw new Error("Transaksi harus memiliki minimal 1 item.");
+                payload = {
+                    type: type,
+                    customer_id: customerID, 
+                    notes: notes,
+                    items: items,
+                    // total_amount tidak perlu dikirim, akan dihitung di backend
+                };
+            } else {
+                throw new Error("Tipe transaksi tidak dikenal.");
             }
-
-            // [DIUBAH] Buat payload DTO baru
-            const payload = {
-                type: type,
-                customer_id: customerID, // <-- Diubah dari 'customer'
-                notes: notes,
-                items: items,
-            };
             
-            // Kirim ke API
+            // Kirim ke API (Payload sudah benar)
             await fetchWithAuth("/api/v1/transactions", {
                 method: "POST",
                 body: JSON.stringify(payload),
@@ -376,15 +441,15 @@ document.addEventListener("DOMContentLoaded", () => {
             errorMessageEl.textContent = error.message;
             errorMessageEl.classList.remove("hidden");
             submitButton.disabled = false;
-            submitButton.textContent = "Simpan Transaksi";
+            // Kembalikan teks tombol ke keadaan yang sesuai
+            updateFormForType();
         }
     });
 
     // --- 5. Inisialisasi Halaman ---
     
-    // Muat daftar produk saat halaman dibuka
+    // Muat daftar produk & pelanggan
     loadProducts();
-    // [BARU] Muat daftar pelanggan saat halaman dibuka
     loadCustomers(); 
     
     // Set form ke status default (Pemasukan)

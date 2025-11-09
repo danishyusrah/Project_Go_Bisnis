@@ -12,10 +12,15 @@ type CreateTransactionItemInput struct {
 
 // CreateTransactionInput adalah DTO untuk membuat transaksi baru
 type CreateTransactionInput struct {
-	Type       models.TransactionType       `json:"type" binding:"required"` // "INCOME" atau "EXPENSE"
-	Notes      string                       `json:"notes"`
-	Items      []CreateTransactionItemInput `json:"items" binding:"required,min=1"` // Harus ada minimal 1 item
-	CustomerID *uint                        `json:"customer_id"`                    // <-- DIUBAH: Dari 'customer' (string) menjadi 'customer_id' (*uint)
+	Type  models.TransactionType `json:"type" binding:"required"` // "INCOME", "EXPENSE", atau "CAPITAL"
+	Notes string                 `json:"notes"`
+	// [PERUBAHAN] Items sekarang opsional (omitempty), tapi jika ada, minimal 1 (min=1)
+	// 'dive' berarti validasi akan dijalankan pada setiap item di dalam array
+	Items      []CreateTransactionItemInput `json:"items" binding:"omitempty,min=1,dive"`
+	CustomerID *uint                        `json:"customer_id"`
+	// [BARU] TotalAmount adalah untuk transaksi non-item (seperti Modal)
+	// Ini juga opsional, dan hanya akan digunakan jika tipenya 'CAPITAL'
+	TotalAmount float64 `json:"total_amount" binding:"omitempty,gte=0"`
 }
 
 // TransactionItemResponse adalah DTO untuk detail item dalam respons
@@ -36,7 +41,7 @@ type TransactionResponse struct {
 	CreatedAt   string                    `json:"created_at"`
 	Items       []TransactionItemResponse `json:"items"`
 
-	// [BARU] Informasi pelanggan yang terstruktur
+	// Informasi pelanggan yang terstruktur
 	CustomerID   *uint  `json:"customer_id"`
 	CustomerName string `json:"customer_name"` // Kita akan isi nama pelanggan di sini
 }

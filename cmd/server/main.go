@@ -49,6 +49,7 @@ func setupRoutes(router *gin.Engine) {
 	transactionHandler := handlers.NewTransactionHandler()
 	dashboardHandler := handlers.NewDashboardHandler()
 	customerHandler := handlers.NewCustomerHandler() // <-- BARU DITAMBAHKAN
+	reportHandler := handlers.NewReportHandler()     // <-- TAMBAHKAN INI
 
 	// --- Rute Halaman Web (Frontend) ---
 	// Grup ini menangani penyajian file HTML
@@ -123,6 +124,36 @@ func setupRoutes(router *gin.Engine) {
 				"title": "Manajemen Pelanggan - Go Bisnis",
 			})
 		})
+
+		// --- PERBAIKAN DI SINI ---
+		// Menambahkan rute GET untuk menyajikan halaman HTML tambah pelanggan
+		web.GET("/add-customer.html", func(c *gin.Context) {
+			c.HTML(http.StatusOK, "add-customer.html", gin.H{
+				"title": "Tambah Pelanggan - Go Bisnis",
+			})
+		})
+
+		// Menambahkan rute GET untuk menyajikan halaman HTML edit pelanggan
+		web.GET("/edit-customer.html", func(c *gin.Context) {
+			c.HTML(http.StatusOK, "edit-customer.html", gin.H{
+				"title": "Edit Pelanggan - Go Bisnis",
+			})
+		})
+		// --- AKHIR PERBAIKAN ---
+
+		// [BARU] Rute untuk halaman Laporan Performa Produk
+		web.GET("/product-performance.html", func(c *gin.Context) {
+			c.HTML(http.StatusOK, "product-performance.html", gin.H{
+				"title": "Laporan Performa Produk - Go Bisnis",
+			})
+		})
+
+		// --- [BARU] Rute untuk halaman Laporan Buku Besar ---
+		web.GET("/general-ledger.html", func(c *gin.Context) {
+			c.HTML(http.StatusOK, "general-ledger.html", gin.H{
+				"title": "Buku Besar - Go Bisnis",
+			})
+		})
 	}
 
 	// --- Grup Rute untuk API v1 (Backend) ---
@@ -172,6 +203,12 @@ func setupRoutes(router *gin.Engine) {
 			// Rute Dashboard (Tahap 5 & Fitur #2)
 			protected.GET("/dashboard/stats", dashboardHandler.GetDashboardStats)
 			protected.GET("/dashboard/chart", dashboardHandler.GetDashboardChartData)
+
+			// [BARU] Rute Laporan (Fitur #4)
+			protected.GET("/reports/product-performance", reportHandler.GetProductPerformance)
+
+			// --- [BARU] Rute untuk Laporan Buku Besar ---
+			protected.GET("/reports/general-ledger", reportHandler.GetGeneralLedger)
 		}
 	}
 }

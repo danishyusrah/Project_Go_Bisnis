@@ -2,17 +2,23 @@ package dto
 
 // DashboardStats adalah DTO untuk ringkasan statistik di dashboard
 type DashboardStats struct {
-	TotalIncome      float64 `json:"total_income"`      // Total Pemasukan (bulan ini)
-	TotalExpense     float64 `json:"total_expense"`     // Total Pengeluaran (bulan ini)
-	NetProfit        float64 `json:"net_profit"`        // Laba Bersih (Pemasukan - Pengeluaran)
-	TransactionCount int64   `json:"transaction_count"` // Jumlah transaksi (bulan ini)
+	// [DIUBAH] Nama field dan penambahan field baru
+	TotalRevenue     float64 `json:"total_revenue"`     // Total Pemasukan Kotor (Total Penjualan)
+	TotalCOGS        float64 `json:"total_cogs"`        // Total Modal (HPP) dari barang terjual
+	GrossProfit      float64 `json:"gross_profit"`      // Laba Kotor (Revenue - COGS)
+	TotalExpense     float64 `json:"total_expense"`     // Total Pengeluaran (Biaya operasional)
+	NetProfit        float64 `json:"net_profit"`        // Laba Bersih (GrossProfit - Expense)
+	TransactionCount int64   `json:"transaction_count"` // Jumlah transaksi (Pemasukan + Pengeluaran)
+	// TotalIncome (lama) dihapus
 }
 
 // --- BARU UNTUK FITUR GRAFIK ---
 
 // ChartDataResponse adalah DTO untuk data yang akan di-render oleh Chart.js
 type ChartDataResponse struct {
-	Labels      []string  `json:"labels"`       // Sumbu X (e.g., ["01 Nov", "02 Nov", ...])
-	IncomeData  []float64 `json:"income_data"`  // Data Pemasukan (e.g., [50000, 75000, ...])
-	ExpenseData []float64 `json:"expense_data"` // Data Pengeluaran (e.g., [10000, 5000, ...])
+	Labels          []string  `json:"labels"`            // Sumbu X (e.g., ["01 Nov", "02 Nov", ...])
+	RevenueData     []float64 `json:"revenue_data"`      // [NAMA BARU] Data Pemasukan Kotor (Penjualan)
+	GrossProfitData []float64 `json:"gross_profit_data"` // [BARU] Data Laba Kotor (Revenue - COGS)
+	ExpenseData     []float64 `json:"expense_data"`      // Data Pengeluaran
+	// IncomeData (lama) dihapus
 }

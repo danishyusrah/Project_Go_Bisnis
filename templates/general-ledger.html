@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buku Besar - Go Bisnis</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Library jsPDF dan jsPDF-AutoTable untuk PDF Tabel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            /* [BARU] Latar belakang global */
+            background-color: #f0f2f5;
+        }
+        .card-shadow { box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03); }
+        
+        .skeleton {
+            background-color: #e0e0e0;
+            border-radius: 0.25rem;
+            animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
+        .filter-select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1em;
+            padding-right: 2.5rem;
+        }
+
+        /* Styling untuk tabel akuntansi */
+        .accounting-table th, .accounting-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #e5e7eb; /* gray-200 */
+            font-size: 0.8rem; /* 12px */
+            line-height: 1.2;
+            vertical-align: top;
+        }
+        .accounting-table th {
+            background-color: #f9fafb; /* gray-50 */
+            font-weight: 600;
+            text-align: left;
+            position: sticky; /* Membuat header tabel 'lengket' di atas */
+            top: 0;
+            z-index: 5; /* Pastikan di atas header sticky halaman */
+        }
+        .accounting-table .text-right { text-align: right; }
+        .accounting-table .font-mono { 
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+        .accounting-table tbody tr:hover {
+            background-color: #f9fafb; /* gray-50 */
+        }
+        
+        /* [BARU] Style untuk Sidebar Desktop */
+        #desktop-sidebar::-webkit-scrollbar { display: none; }
+        #desktop-sidebar { -ms-overflow-style: none; scrollbar-width: none; }
+        .sidebar-link-active {
+            background-color: #4f46e5; /* indigo-600 */
+            color: #ffffff; /* white */
+        }
+        .sidebar-link-active svg {
+            color: #ffffff; /* white */
+        }
+    </style>
+</head>
+<!-- [DIUBAH] Tambahkan lg:flex untuk layout desktop -->
+<body class="bg-gray-100 lg:flex">
+
+    <!-- 
+      [BARU] NAVIGASI SIDEBAR DESKTOP 
+    -->
+    <nav id="desktop-sidebar" class="hidden lg:flex lg:flex-col lg:w-64 lg:flex-shrink-0 lg:overflow-y-auto bg-white border-r border-gray-200 card-shadow">
+        <div class="flex flex-col flex-grow p-4">
+            <!-- Logo atau Judul Aplikasi -->
+            <div class="flex items-center justify-center h-16 flex-shrink-0 px-4">
+                <h1 class="text-2xl font-bold text-indigo-600">Go Bisnis</h1>
+            </div>
+            
+            <!-- Menu Navigasi -->
+            <div class="flex-grow mt-5">
+                <nav class="flex-1 space-y-2">
+                    <!-- Link Dashboard -->
+                    <a href="/dashboard.html" class="flex items-center px-4 py-3 rounded-lg text-gray-600 hover:bg-indigo-500 hover:text-white transition-colors duration-200 group">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-home mr-3 text-gray-400 group-hover:text-white"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                        <span class="font-medium">Home</span>
+                    </a>
+                    
+                    <!-- Link Laporan (Aktif) -->
+                    <a href="/reports.html" class="sidebar-link-active flex items-center px-4 py-3 rounded-lg text-gray-700 hover:bg-indigo-500 hover:text-white transition-colors duration-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bar-chart-3 mr-3"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+                        <span class="font-medium">Laporan</span>
+                    </a>
+                    
+                    <!-- Link Produk -->
+                    <a href="/products.html" class="flex items-center px-4 py-3 rounded-lg text-gray-600 hover:bg-indigo-500 hover:text-white transition-colors duration-200 group">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-package mr-3 text-gray-400 group-hover:text-white"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                        <span class="font-medium">Produk</span>
+                    </a>
+
+                    <!-- Link Pengaturan -->
+                    <a href="/settings.html" class="flex items-center px-4 py-3 rounded-lg text-gray-600 hover:bg-indigo-500 hover:text-white transition-colors duration-200 group">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings mr-3 text-gray-400 group-hover:text-white"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 0-2 0l-.15-.08a2 2 0 0 0-2.73 2.73l.09.15a2 2 0 0 0 0 2l-.25.43a2 2 0 0 0-1.73 1H2a2 2 0 0 0-2 2v.44a2 2 0 0 0 2 2h.18a2 2 0 0 1 1.73 1l.25.43a2 2 0 0 0 0 2l-.08.15a2 2 0 0 0 2.73 2.73l.15-.08a2 2 0 0 0 2 0l.43-.25a2 2 0 0 1 1.73 1v.18a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 0 2 0l.15.08a2 2 0 0 0 2.73-2.73l-.09-.15a2 2 0 0 0 0 2l.25-.43a2 2 0 0 0 1.73-1H22a2 2 0 0 0 2-2v-.44a2 2 0 0 0-2-2h-.18a2 2 0 0 1-1.73-1l-.25-.43a2 2 0 0 0 0-2l.08-.15a2 2 0 0 0-2.73-2.73l-.15.08a2 2 0 0 0-2 0l-.43.25a2 2 0 0 1-1.73-1V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <span class="font-medium">Pengaturan</span>
+                    </a>
+                </nav>
+            </div>
+            
+            <!-- Tombol Aksi Utama (CTA) Sidebar -->
+            <div class="mt-auto mb-4">
+                <a href="/add-transaction.html" class="flex items-center justify-center bg-indigo-600 text-white w-full py-3 px-4 rounded-lg shadow-lg hover:bg-indigo-700 transition-colors duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus mr-2"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                    <span class="font-medium">Transaksi Baru</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+    <!-- [AKHIR] SIDEBAR DESKTOP -->
+
+
+    <!-- 
+      [DIUBAH] KONTAINER KONTEN UTAMA
+    -->
+    <div class="max-w-md mx-auto bg-gray-100 min-h-screen lg:flex-1 lg:max-w-none lg:mx-0">
+        
+        <!-- 1. Header Halaman -->
+        <header class="flex justify-between items-center p-5 bg-white card-shadow sticky top-0 z-10">
+            <!-- Tombol Kembali ke Halaman Laporan -->
+            <a href="/reports.html" class="p-2 rounded-full text-gray-600 hover:bg-gray-100">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+            </a>
+            <h1 class="text-xl font-bold text-gray-900">Buku Besar</h1>
+            <!-- Tombol Download PDF -->
+            <button id="downloadPdfButton" class="p-2 rounded-full text-indigo-600 hover:bg-indigo-100" title="Download Laporan PDF">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+            </button>
+        </header>
+
+        <!-- 2. Konten Utama (Filter, Ringkasan, Tabel) -->
+        <!-- [DIUBAH] Tambahkan lg:p-8 -->
+        <main class="p-5 pb-24 lg:p-8">
+            
+            <!-- [DIUBAH] Filter dibuat lebih sempit di desktop -->
+            <section class="mb-4 lg:max-w-md">
+                <div class="grid grid-cols-2 gap-3">
+                    <!-- Dropdown Bulan -->
+                    <div>
+                        <label for="filter-month" class="block text-xs font-medium text-gray-700 mb-1">Bulan</label>
+                        <select id="filter-month" name="month" class="filter-select w-full px-4 py-2 text-sm font-medium text-gray-800 bg-white lg:bg-gray-100 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="0">Januari</option>
+                            <option value="1">Februari</option>
+                            <option value="2">Maret</option>
+                            <option value="3">April</option>
+                            <option value="4">Mei</option>
+                            <option value="5">Juni</option>
+                            <option value="6">Juli</option>
+                            <option value="7">Agustus</option>
+                            <option value="8">September</option>
+                            <option value="9">Oktober</option>
+                            <option value="10">November</option>
+                            <option value="11">Desember</option>
+                        </select>
+                    </div>
+                    <!-- Dropdown Tahun -->
+                    <div>
+                        <label for="filter-year" class="block text-xs font-medium text-gray-700 mb-1">Tahun</label>
+                        <select id="filter-year" name="year" class="filter-select w-full px-4 py-2 text-sm font-medium text-gray-800 bg-white lg:bg-gray-100 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <!-- Opsi tahun akan diisi oleh JavaScript -->
+                        </select>
+                    </div>
+                </div>
+                <p id="dateRangeLabel" class="text-center text-sm text-gray-600 mt-2">Memuat rentang...</p>
+            </section>
+            <!-- [AKHIR PERUBAHAN] -->
+
+
+            <!-- [DIUBAH] Ringkasan Saldo dibuat lebih sempit di desktop -->
+            <section id="summary-section" class="mb-4 bg-white p-4 rounded-xl card-shadow space-y-2 lg:max-w-md">
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">Ringkasan Saldo</h2>
+                
+                <!-- Skeleton Loader untuk Ringkasan -->
+                <div id="summary-skeleton" class="space-y-2">
+                    <div class="flex justify-between"><div class="skeleton h-4 w-1/3"></div><div class="skeleton h-4 w-1/2"></div></div>
+                    <div class="flex justify-between"><div class="skeleton h-4 w-1/3"></div><div class="skeleton h-4 w-1/2"></div></div>
+                    <div class="flex justify-between"><div class="skeleton h-4 w-1/3"></div><div class="skeleton h-4 w-1/2"></div></div>
+                    <hr class="border-t border-gray-200 border-dashed my-1">
+                    <div class="flex justify-between"><div class="skeleton h-5 w-1/3"></div><div class="skeleton h-5 w-1/2"></div></div>
+                </div>
+
+                <!-- Konten Asli Ringkasan -->
+                <div id="summary-content" class="hidden space-y-2">
+                    <!-- Saldo Awal -->
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-gray-600">Saldo Awal</span>
+                        <span id="summaryBeginningBalance" class="font-medium text-gray-800 font-mono">Rp 0</span>
+                    </div>
+                    <!-- Total Kredit (Masuk) -->
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-gray-600">Total Kredit (Masuk)</span>
+                        <span id="summaryTotalCredit" class="font-medium text-green-600 font-mono">+ Rp 0</span>
+                    </div>
+                    <!-- Total Debet (Keluar) -->
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-gray-600">Total Debet (Keluar)</span>
+                        <span id="summaryTotalDebit" class="font-medium text-red-600 font-mono">- Rp 0</span>
+                    </div>
+                    <!-- Garis Pemisah -->
+                    <hr class="border-t border-gray-200 border-dashed my-1">
+                    <!-- Saldo Akhir -->
+                    <div class="flex justify-between items-center text-base">
+                        <span class="font-semibold text-gray-900">Saldo Akhir</span>
+                        <span id="summaryEndingBalance" class="font-bold text-gray-900 font-mono">Rp 0</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tabel Buku Besar -->
+            <!-- [DIUBAH] Header tabel dibuat sticky top-16 (di bawah header utama) -->
+            <section class="bg-white rounded-xl card-shadow overflow-hidden">
+                <!-- Wrapper untuk scrolling tabel -->
+                <div class="overflow-x-auto lg:overflow-y-auto lg:max-h-[calc(100vh-14rem)]">
+                    <table class="w-full accounting-table">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="w-[20%] lg:w-[15%]">Tanggal</th>
+                                <th class="w-[35%] lg:w-[45%]">Keterangan</th>
+                                <th class="w-[15%] lg:w-[15%] text-right">Debet</th>
+                                <th class="w-[15%] lg:w-[15%] text-right">Kredit</th>
+                                <th class="w-[15%] lg:w-[10%] text-right">Saldo</th>
+                            </tr>
+                        </thead>
+                        <!-- Data entri diisi oleh JS -->
+                        <tbody id="ledger-table-body">
+                            <!-- Skeleton Loader untuk Tabel -->
+                            <tr id="table-skeleton-row">
+                                <td colspan="5" class="p-0">
+                                    <div class="space-y-3 p-3">
+                                        <div class="skeleton h-5 w-full"></div>
+                                        <div class="skeleton h-5 w-full"></div>
+                                        <div class="skeleton h-5 w-full"></div>
+                                        <div class="skeleton h-5 w-full"></div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <!-- Footer tabel dengan total -->
+                        <tfoot id="ledger-table-footer" class="bg-gray-100 font-bold sticky bottom-0">
+                            <!-- Akan diisi oleh JS -->
+                        </tfoot>
+                    </table>
+                </div>
+                <!-- Pesan jika tidak ada data -->
+                <div id="no-data-message" class="hidden text-center text-gray-500 p-10">
+                    Tidak ada transaksi pada periode ini.
+                </div>
+            </section>
+            
+        </main>
+    </div> <!-- [AKHIR] KONTAINER KONTEN UTAMA -->
+
+    <!-- JavaScript kustom untuk halaman ini -->
+    <script src="/static/general-ledger.js"></script>
+
+</body>
+</html>

@@ -12,29 +12,38 @@ document.addEventListener("DOMContentLoaded", () => {
         return; // Hentikan eksekusi skrip
     }
 
-    // Ambil elemen-elemen dari HTML
+    // Inisialisasi library PDF
+    const { jsPDF } = jspdf;
+
+    // [DIUBAH] Ambil elemen-elemen dari HTML dengan ID baru
     const userFullNameEl = document.getElementById("userFullName");
     const netProfitEl = document.getElementById("netProfit");
     const netProfitLabelEl = document.getElementById("netProfitLabel"); // Label Laba Bersih
-    const totalIncomeEl = document.getElementById("totalIncome");
+    const totalRevenueEl = document.getElementById("totalRevenue");     // <-- ID BARU
     const totalExpenseEl = document.getElementById("totalExpense");
     const dateRangeLabelEl = document.getElementById("dateRangeLabel"); // Label rentang tanggal
-    const incomeLabelEl = document.getElementById("incomeLabel");
+    const revenueLabelEl = document.getElementById("revenueLabel");     // <-- ID BARU
     const expenseLabelEl = document.getElementById("expenseLabel");
     const transactionListEl = document.getElementById("transactionList");
     const logoutButton = document.getElementById("logoutButton");
     
-    // Ambil elemen filter
-    const filterButtons = document.querySelectorAll(".filter-button");
+    // [DIUBAH] Ambil elemen filter dropdown baru
+    const filterMonthEl = document.getElementById("filter-month");
+    const filterYearEl = document.getElementById("filter-year");
     
     // Ambil elemen Grafik
     const chartContext = document.getElementById("mainChart").getContext("2d");
     const chartSkeleton = document.getElementById("chartSkeleton");
     let mainChartInstance = null; // Untuk menyimpan instance Chart
 
-    // Variabel state
-    let currentFilter = "this-month"; // Filter aktif saat ini
-    let currentFilterLabel = "Bulan Ini"; // Label untuk UI
+    // Ambil elemen untuk PDF
+    const downloadPdfButton = document.getElementById("downloadPdfButton");
+    const dashboardContentEl = document.getElementById("dashboard-content");
+    const pdfLoadingOverlay = document.getElementById("pdfLoadingOverlay");
+
+    // [DIHAPUS] Variabel state lama tidak diperlukan lagi
+    // let currentFilter = "this-month"; 
+    // let currentFilterLabel = "Bulan Ini";
 
     // --- 2. Fungsi Helper (Sangat Profesional) ---
 
@@ -76,49 +85,74 @@ document.addEventListener("DOMContentLoaded", () => {
         return response.json();
     };
 
+
+    // --- [BARU] 3. Logika Filter Tanggal ---
+
     /**
-     * [BARU] Helper untuk menghitung rentang tanggal
+     * [BARU] Mengisi dropdown tahun dari tahun ini s/d 5 tahun ke belakang
+     */
+    const populateYearFilter = () => {
+        const currentYear = new Date().getFullYear();
+        for (let i = 0; i < 5; i++) {
+            const year = currentYear - i;
+            const option = document.createElement("option");
+            option.value = year;
+            option.textContent = year;
+            filterYearEl.appendChild(option);
+        }
+    };
+
+    /**
+     * [BARU] Mengatur filter ke bulan dan tahun saat ini
+     */
+    const setDefaultFilters = () => {
+        const now = new Date();
+        const currentMonth = now.getMonth(); // 0 = Januari, 1 = Februari, ...
+        const currentYear = now.getFullYear();
+        
+        filterMonthEl.value = currentMonth;
+        filterYearEl.value = currentYear;
+    };
+
+    /**
+     * [DIUBAH TOTAL] Helper untuk menghitung rentang tanggal dari dropdown
      * @returns {string} - Query string (misal: "?from=...&to=...")
      */
     const getDateRangeQuery = () => {
-        const now = new Date();
-        let startDate, endDate;
-        endDate = new Date(); // Selalu berakhir hari ini (sampai akhir hari)
-        endDate.setHours(23, 59, 59, 999);
+        // 1. Ambil nilai dari dropdown
+        const selectedMonth = parseInt(filterMonthEl.value, 10); // 0-11
+        const selectedYear = parseInt(filterYearEl.value, 10);
 
-        switch (currentFilter) {
-            case "last-7-days":
-                startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
-                currentFilterLabel = "7 Hari Terakhir";
-                dateRangeLabelEl.textContent = `${startDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })} - ${endDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}`;
-                break;
-            
-            case "last-month":
-                startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-                endDate = new Date(now.getFullYear(), now.getMonth(), 0); // Hari terakhir bulan lalu
-                currentFilterLabel = "Bulan Lalu";
-                dateRangeLabelEl.textContent = startDate.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
-                break;
-            
-            case "this-month":
-            default:
-                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-                currentFilterLabel = "Bulan Ini";
-                dateRangeLabelEl.textContent = startDate.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
-                break;
-        }
-        
-        // Set awal hari untuk startDate
+        // 2. Buat objek Date untuk label
+        const dateForLabel = new Date(selectedYear, selectedMonth, 1);
+        const filterLabel = dateForLabel.toLocaleDateString("id-ID", {
+            month: "long",
+            year: "numeric"
+        });
+
+        // 3. Hitung tanggal mulai (Awal bulan)
+        const startDate = new Date(selectedYear, selectedMonth, 1);
         startDate.setHours(0, 0, 0, 0);
 
-        // Format ke RFC3339 (ISO string) yang dimengerti Go
+        // 4. Hitung tanggal akhir (Akhir bulan)
+        // Trik: ambil hari ke-0 dari bulan BERIKUTNYA
+        const endDate = new Date(selectedYear, selectedMonth + 1, 0); 
+        endDate.setHours(23, 59, 59, 999);
+
+        // 5. Update label di UI
+        dateRangeLabelEl.textContent = filterLabel;
+        netProfitLabelEl.textContent = `Laba Bersih (${filterLabel})`;
+        revenueLabelEl.textContent = filterLabel;
+        expenseLabelEl.textContent = filterLabel;
+
+        // 6. Format ke RFC3339 (ISO string) yang dimengerti Go
         const fromQuery = `from=${startDate.toISOString()}`;
         const toQuery = `to=${endDate.toISOString()}`;
         
         return `?${fromQuery}&${toQuery}`;
     };
 
-    // --- 3. Memuat Data dari API ---
+    // --- 4. Memuat Data dari API ---
 
     // Fungsi untuk memuat data profil pengguna
     const loadProfile = async () => {
@@ -131,38 +165,33 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    // Fungsi untuk memuat statistik dashboard
+    // [DIUBAH] Fungsi untuk memuat statistik dashboard
     const loadDashboardStats = async () => {
         const dateQuery = getDateRangeQuery(); // Dapatkan query string tanggal
         
         try {
+            // Membaca data JSON baru dari API
             const stats = await fetchWithAuth(`/api/v1/dashboard/stats${dateQuery}`);
             
             // Isi data ke elemen HTML
-            netProfitEl.textContent = formatCurrency(stats.net_profit);
-            totalIncomeEl.textContent = formatCurrency(stats.total_income);
-            totalExpenseEl.textContent = formatCurrency(stats.total_expense);
+            netProfitEl.textContent = formatCurrency(stats.net_profit);       // Laba Bersih
+            totalRevenueEl.textContent = formatCurrency(stats.total_revenue); // Pendapatan Kotor
+            totalExpenseEl.textContent = formatCurrency(stats.total_expense); // Biaya Operasional
             
-            // Perbarui label
-            netProfitLabelEl.textContent = `Laba Bersih (${currentFilterLabel})`;
-            incomeLabelEl.textContent = currentFilterLabel;
-            expenseLabelEl.textContent = currentFilterLabel;
+            // Label sudah di-update oleh getDateRangeQuery()
 
         } catch (error) {
             console.error("Error loading dashboard stats:", error);
             netProfitEl.textContent = "Error";
-            totalIncomeEl.textContent = "Error";
+            totalRevenueEl.textContent = "Error"; // <-- Diubah
             totalExpenseEl.textContent = "Error";
         }
     };
 
-    // Fungsi untuk memuat transaksi terakhir
+    // Fungsi untuk memuat transaksi terakhir (Tidak berubah)
     const loadTransactions = async () => {
         try {
-            // Catatan: API /api/v1/transactions belum difilter tanggal,
-            // jadi ini akan selalu menampilkan 5 transaksi TERBARU secara keseluruhan.
-            // (Untuk performa lebih baik, idealnya API ini juga difilter)
-            const transactions = await fetchWithAuth("/api/v1/transactions");
+            const transactions = await fetchWithAuth("/api/v1/transactions"); // Ini selalu 5 terbaru
 
             transactionListEl.innerHTML = ""; // Kosongkan placeholder loading
 
@@ -185,7 +214,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     month: "short"
                 });
 
-                // [DIUBAH] Gunakan customer_name dari API
                 const customerName = tx.customer_name || "Umum"; 
 
                 const txElement = document.createElement("div");
@@ -218,7 +246,7 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     /**
-     * [BARU] Fungsi untuk memuat dan menggambar grafik
+     * [DIUBAH] Fungsi untuk memuat dan menggambar grafik
      */
     const loadDashboardChart = async () => {
         const dateQuery = getDateRangeQuery();
@@ -232,6 +260,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         
         try {
+            // Membaca data JSON baru dari API
             const chartData = await fetchWithAuth(`/api/v1/dashboard/chart${dateQuery}`);
             
             // Sembunyikan skeleton, tampilkan canvas
@@ -242,18 +271,27 @@ document.addEventListener("DOMContentLoaded", () => {
                 type: 'line',
                 data: {
                     labels: chartData.labels,
+                    // Dataset diganti menjadi 3 garis
                     datasets: [
                         {
-                            label: 'Pemasukan',
-                            data: chartData.income_data,
+                            label: 'Pendapatan Kotor',
+                            data: chartData.revenue_data, // <-- Data Baru
                             borderColor: '#22c55e', // green-500
                             backgroundColor: 'rgba(34, 197, 94, 0.1)',
                             fill: true,
                             tension: 0.3,
                         },
                         {
-                            label: 'Pengeluaran',
-                            data: chartData.expense_data,
+                            label: 'Laba Kotor',
+                            data: chartData.gross_profit_data, // <-- Data Baru
+                            borderColor: '#3b82f6', // blue-500
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            fill: true,
+                            tension: 0.3,
+                        },
+                        {
+                            label: 'Biaya Operasional',
+                            data: chartData.expense_data, // <-- Nama label baru
                             borderColor: '#ef4444', // red-500
                             backgroundColor: 'rgba(239, 68, 68, 0.1)',
                             fill: true,
@@ -264,6 +302,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    animation: true, // Biarkan true, kita akan nonaktifkan saat print
                     scales: {
                         y: {
                             beginAtZero: true,
@@ -303,29 +342,94 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    // --- 4. Event Listeners ---
+    // --- 5. Fungsi Ekspor PDF ---
+
+    /**
+     * Membuat dan mengunduh PDF dari konten dashboard
+     */
+    const exportToPDF = async () => {
+        // Tampilkan loading
+        pdfLoadingOverlay.classList.remove("hidden");
+
+        // [PENTING] Nonaktifkan animasi grafik agar "foto" tidak buram/kosong
+        if (mainChartInstance) {
+            mainChartInstance.options.animation = false;
+            mainChartInstance.update('none'); // Update instan tanpa animasi
+        }
+
+        try {
+            // 1. "Foto" elemen <main>
+            const canvas = await html2canvas(dashboardContentEl, {
+                scale: 2, // Resolusi tinggi
+                useCORS: true,
+                logging: false,
+            });
+
+            // 2. Siapkan dokumen PDF
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            
+            // 3. Ambil data gambar
+            const imgData = canvas.toDataURL('image/png');
+            
+            // 4. Hitung dimensi
+            const margin = 10;
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const contentWidth = pdfWidth - (margin * 2);
+            const contentHeight = (canvas.height * contentWidth) / canvas.width;
+
+            // 5. Tambahkan Judul Elegan
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(16);
+            pdf.text(`Laporan Dashboard - ${userFullNameEl.textContent || 'Go Bisnis'}`, margin, margin + 5);
+            
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(10);
+            pdf.text(`Periode: ${dateRangeLabelEl.textContent}`, margin, margin + 12);
+            
+            // 6. Tambahkan gambar
+            let topPosition = margin + 20;
+            let imgHeight = contentHeight;
+
+            // Jika konten lebih panjang dari 1 halaman A4, pangkas
+            if (contentHeight > (pdfHeight - topPosition - margin)) {
+                imgHeight = pdfHeight - topPosition - margin;
+                console.warn("Konten dashboard terlalu panjang, memotong PDF.");
+            }
+
+            pdf.addImage(imgData, 'PNG', margin, topPosition, contentWidth, imgHeight);
+
+            // 7. Nama file
+            const fileName = `Laporan_Dashboard_${dateRangeLabelEl.textContent.replace(" ", "_")}.pdf`;
+
+            // 8. Unduh
+            pdf.save(fileName);
+
+        } catch (error) {
+            console.error("Gagal membuat PDF:", error);
+            alert("Maaf, terjadi kesalahan saat membuat file PDF.");
+        } finally {
+            // Sembunyikan loading
+            pdfLoadingOverlay.classList.add("hidden");
+            // [PENTING] Kembalikan animasi grafik
+            if (mainChartInstance) {
+                mainChartInstance.options.animation = true;
+            }
+        }
+    };
+
+    // --- 6. Event Listeners ---
 
     // Fungsi untuk me-refresh semua data
     const refreshAllData = () => {
         loadDashboardStats();
         loadDashboardChart();
-        // loadTransactions(); // Transaksi terakhir tidak perlu difilter
+        // loadTransactions(); // Transaksi terakhir tidak perlu difilter tanggal
     };
 
-    // Event listener untuk tombol filter
-    filterButtons.forEach(button => {
-        button.addEventListener("click", () => {
-            // Update state
-            currentFilter = button.dataset.filter;
-            
-            // Update UI tombol
-            filterButtons.forEach(btn => btn.classList.remove("active"));
-            button.classList.add("active");
-            
-            // Refresh data
-            refreshAllData();
-        });
-    });
+    // [DIUBAH] Event listener untuk filter dropdown
+    filterMonthEl.addEventListener("change", refreshAllData);
+    filterYearEl.addEventListener("change", refreshAllData);
 
     // Event Listener Logout
     logoutButton.addEventListener("click", () => {
@@ -333,8 +437,13 @@ document.addEventListener("DOMContentLoaded", () => {
         window.location.href = "/";
     });
 
-    // --- 5. Jalankan Semua Fungsi Load Awal ---
+    // Event listener untuk tombol download PDF
+    downloadPdfButton.addEventListener("click", exportToPDF);
+
+    // --- 7. Jalankan Semua Fungsi Load Awal ---
     loadProfile();
     loadTransactions(); // Muat transaksi terakhir (tidak tergantung filter)
-    refreshAllData(); // Muat statistik + grafik (tergantung filter default)
+    populateYearFilter(); // <-- Panggil fungsi baru
+    setDefaultFilters();  // <-- Panggil fungsi baru
+    refreshAllData();     // <-- Panggil ini TERAKHIR untuk memuat data bulan ini
 });

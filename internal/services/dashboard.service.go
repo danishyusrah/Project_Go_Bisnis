@@ -18,34 +18,39 @@ func NewDashboardService() *DashboardService {
 }
 
 // GetDashboardStats adalah logika bisnis untuk mengambil statistik dashboard
-// [DIPERBARUI] Sekarang menerima rentang waktu sebagai parameter
+// [DIPERBARUI] Logika query diubah total untuk kalkulasi Laba Kotor dan Laba Bersih
 func (s *DashboardService) GetDashboardStats(userID uint, startTime time.Time, endTime time.Time) (dto.DashboardStats, error) {
 	db := database.DB
 	var stats dto.DashboardStats
 
-	// 1. Tentukan rentang waktu (DIHAPUS: Logika 'Bulan Ini' dipindahkan ke handler)
-	// now := time.Now()
-	// startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
-	// endOfMonth := startOfMonth.AddDate(0, 1, 0).Add(-time.Nanosecond) // Awal bulan depan, dikurangi 1 nano
+	log.Printf("Menghitung statistik dashboard baru (dengan COGS) untuk UserID %d dari %s hingga %s", userID, startTime, endTime)
 
-	log.Printf("Menghitung statistik dashboard untuk UserID %d dari %s hingga %s", userID, startTime, endTime)
+	// --- 1. Kalkulasi Pemasukan (Revenue) dan Modal (COGS) ---
+	// Query ini sudah benar, karena HANYA mencari 'models.Income'
+	type RevenueCOGSResult struct {
+		TotalRevenue float64 `gorm:"column:total_revenue"`
+		TotalCOGS    float64 `gorm:"column:total_cogs"`
+	}
+	var revenueCOGS RevenueCOGSResult
 
-	// 2. Query untuk menghitung Total Pemasukan
-	// Kita gunakan 'struct scan' untuk hasil agregat
+	err := db.Model(&models.Transaction{}).
+		Select("COALESCE(SUM(CASE WHEN transactions.type = ? THEN transactions.total_amount ELSE 0 END), 0) as total_revenue, COALESCE(SUM(T_Items.total_cogs), 0) as total_cogs", models.Income).
+		Joins("LEFT JOIN (SELECT transaction_id, SUM(purchase_price * quantity) as total_cogs FROM transaction_items GROUP BY transaction_id) AS T_Items ON T_Items.transaction_id = transactions.id").
+		Where("transactions.user_id = ? AND transactions.type = ? AND transactions.created_at BETWEEN ? AND ?", userID, models.Income, startTime, endTime).
+		Scan(&revenueCOGS).Error
+
+	if err != nil {
+		log.Printf("Error querying total revenue/cogs: %v", err)
+		return stats, err
+	}
+	stats.TotalRevenue = revenueCOGS.TotalRevenue
+	stats.TotalCOGS = revenueCOGS.TotalCOGS
+
+	// --- 2. Query untuk menghitung Total Pengeluaran (Biaya Operasional) ---
+	// Query ini sudah benar, karena HANYA mencari 'models.Expense'
 	type SumResult struct {
 		Total float64
 	}
-	var incomeResult SumResult
-	if err := db.Model(&models.Transaction{}).
-		Select("COALESCE(SUM(total_amount), 0) as total").
-		Where("user_id = ? AND type = ? AND created_at BETWEEN ? AND ?", userID, models.Income, startTime, endTime).
-		Scan(&incomeResult).Error; err != nil {
-		log.Printf("Error querying total income: %v", err)
-		return stats, err
-	}
-	stats.TotalIncome = incomeResult.Total
-
-	// 3. Query untuk menghitung Total Pengeluaran
 	var expenseResult SumResult
 	if err := db.Model(&models.Transaction{}).
 		Select("COALESCE(SUM(total_amount), 0) as total").
@@ -56,93 +61,134 @@ func (s *DashboardService) GetDashboardStats(userID uint, startTime time.Time, e
 	}
 	stats.TotalExpense = expenseResult.Total
 
-	// 4. Query untuk menghitung Jumlah Transaksi
+	// --- 3. Query untuk menghitung Jumlah Transaksi (Pemasukan + Pengeluaran) ---
 	var count int64
+	// [PERUBAHAN DI SINI]
+	// Kita tambahkan filter `type IN (?, ?)` agar TIDAK menghitung 'CAPITAL'
 	if err := db.Model(&models.Transaction{}).
-		Where("user_id = ? AND created_at BETWEEN ? AND ?", userID, startTime, endTime).
+		Where("user_id = ? AND type IN (?, ?) AND created_at BETWEEN ? AND ?", userID, models.Income, models.Expense, startTime, endTime).
 		Count(&count).Error; err != nil {
 		log.Printf("Error querying transaction count: %v", err)
 		return stats, err
 	}
 	stats.TransactionCount = count
 
-	// 5. Hitung Laba Bersih
-	stats.NetProfit = stats.TotalIncome - stats.TotalExpense
+	// --- 4. Hitung Laba Kotor dan Laba Bersih ---
+	stats.GrossProfit = stats.TotalRevenue - stats.TotalCOGS
+	stats.NetProfit = stats.GrossProfit - stats.TotalExpense
 
 	return stats, nil
 }
 
 // --- BARU UNTUK FITUR GRAFIK ---
 
-// DailyTotal adalah struct helper untuk hasil query agregat data harian
-type DailyTotal struct {
-	Day          time.Time `gorm:"column:day"` // Ini penting untuk GORM scan
-	IncomeTotal  float64   `gorm:"column:income_total"`
-	ExpenseTotal float64   `gorm:"column:expense_total"`
+// [DIPERBARUI] Helper struct untuk data agregat harian
+type DailyChartData struct {
+	Day     time.Time `gorm:"column:day"`
+	Revenue float64   `gorm:"column:revenue"` // Total Penjualan
+	COGS    float64   `gorm:"column:cogs"`    // Total Modal
+	Expense float64   `gorm:"column:expense"` // Total Biaya
 }
 
-// GetDashboardChartData adalah logika bisnis untuk mengambil data harian untuk grafik
+// [DIPERBARUI] GetDashboardChartData adalah logika bisnis untuk mengambil data harian untuk grafik
 func (s *DashboardService) GetDashboardChartData(userID uint, startTime time.Time, endTime time.Time) (dto.ChartDataResponse, error) {
 	db := database.DB
 	var response dto.ChartDataResponse
-	var results []DailyTotal
 
-	// 1. Query Agregat Harian
-	// Ini adalah query profesional yang menggunakan conditional aggregation (CASE WHEN)
-	// untuk mem-pivot data 'type' menjadi kolom 'income_total' dan 'expense_total'
+	// [PERHATIAN] Query ini harus diubah total untuk menghindari perkalian ganda.
+	// Kita akan menggunakan 2 query terpisah dan menggabungkannya di Go.
+
+	// 1. Helper struct untuk Query Pendapatan & COGS
+	type DailyIncomeCOGS struct {
+		Day     time.Time `gorm:"column:day"`
+		Revenue float64   `gorm:"column:revenue"`
+		COGS    float64   `gorm:"column:cogs"`
+	}
+	var incomeData []DailyIncomeCOGS
+
+	// Query 1: Ambil data Pendapatan (Revenue) dan Modal (COGS) harian
+	// Query ini sudah benar, karena HANYA mencari 'models.Income'
 	err := db.Model(&models.Transaction{}).
-		Select("DATE(created_at) as day, SUM(CASE WHEN type = ? THEN total_amount ELSE 0 END) as income_total, SUM(CASE WHEN type = ? THEN total_amount ELSE 0 END) as expense_total", models.Income, models.Expense).
-		Where("user_id = ? AND created_at BETWEEN ? AND ?", userID, startTime, endTime).
-		Group("DATE(created_at)").
+		Select("DATE(transactions.created_at) as day, SUM(transactions.total_amount) as revenue, SUM(T_Items.total_cogs) as cogs").
+		Joins("LEFT JOIN (SELECT transaction_id, SUM(purchase_price * quantity) as total_cogs FROM transaction_items GROUP BY transaction_id) AS T_Items ON T_Items.transaction_id = transactions.id").
+		Where("transactions.user_id = ? AND transactions.type = ? AND transactions.created_at BETWEEN ? AND ?", userID, models.Income, startTime, endTime).
+		Group("DATE(transactions.created_at)").
 		Order("day ASC").
-		Scan(&results).Error
+		Scan(&incomeData).Error
 
 	if err != nil {
-		log.Printf("Error querying chart data: %v", err)
+		log.Printf("Error querying chart income/cogs data: %v", err)
 		return response, err
 	}
 
-	// 2. Buat Peta (Map) untuk pencarian data yang efisien
-	// Ini akan menyimpan data yang kita dapat dari DB
-	dataMap := make(map[string]DailyTotal)
-	for _, r := range results {
-		dayStr := r.Day.Format("2006-01-02") // Kunci Peta: "2025-11-08"
-		dataMap[dayStr] = r
+	// 2. Helper struct untuk Query Pengeluaran
+	type DailyExpense struct {
+		Day     time.Time `gorm:"column:day"`
+		Expense float64   `gorm:"column:expense"`
+	}
+	var expenseData []DailyExpense
+
+	// Query 2: Ambil data Pengeluaran (Expense) harian
+	// Query ini sudah benar, karena HANYA mencari 'models.Expense'
+	err = db.Model(&models.Transaction{}).
+		Select("DATE(created_at) as day, SUM(total_amount) as expense").
+		Where("user_id = ? AND type = ? AND created_at BETWEEN ? AND ?", userID, models.Expense, startTime, endTime).
+		Group("DATE(created_at)").
+		Order("day ASC").
+		Scan(&expenseData).Error
+
+	if err != nil {
+		log.Printf("Error querying chart expense data: %v", err)
+		return response, err
 	}
 
-	// 3. Isi hari-hari yang kosong (Gap Filling)
-	// Kita iterasi dari startTime hingga endTime, hari demi hari.
-	// Jika satu hari tidak ada di 'dataMap', kita isi dengan 0.
-	// Ini memastikan grafik di frontend tidak "bolong-bolong".
+	// 3. Buat Peta (Map) untuk penggabungan data yang efisien
+	incomeMap := make(map[string]DailyIncomeCOGS)
+	for _, r := range incomeData {
+		dayStr := r.Day.Format("2006-01-02")
+		incomeMap[dayStr] = r
+	}
+	expenseMap := make(map[string]DailyExpense)
+	for _, r := range expenseData {
+		dayStr := r.Day.Format("2006-01-02")
+		expenseMap[dayStr] = r
+	}
 
-	// Normalisasi waktu ke awal hari untuk loop yang konsisten
+	// 4. Isi hari-hari yang kosong (Gap Filling)
 	loc := startTime.Location()
 	loopStart := time.Date(startTime.Year(), startTime.Month(), startTime.Day(), 0, 0, 0, 0, loc)
 	loopEnd := time.Date(endTime.Year(), endTime.Month(), endTime.Day(), 0, 0, 0, 0, loc)
 
 	for d := loopStart; !d.After(loopEnd); d = d.AddDate(0, 0, 1) {
 		dayStr := d.Format("2006-01-02")
-		labelFormat := d.Format("02 Jan") // Label "08 Nov"
+		labelFormat := d.Format("02 Jan")
 
-		var dailyIncome float64 = 0
+		var dailyRevenue float64 = 0
+		var dailyCOGS float64 = 0
 		var dailyExpense float64 = 0
 
-		// Cek apakah ada data di peta untuk hari ini
-		if data, ok := dataMap[dayStr]; ok {
-			dailyIncome = data.IncomeTotal
-			dailyExpense = data.ExpenseTotal
+		if data, ok := incomeMap[dayStr]; ok {
+			dailyRevenue = data.Revenue
+			dailyCOGS = data.COGS
 		}
+		if data, ok := expenseMap[dayStr]; ok {
+			dailyExpense = data.Expense
+		}
+
+		dailyGrossProfit := dailyRevenue - dailyCOGS
 
 		// Tambahkan data (walaupun 0) ke respons
 		response.Labels = append(response.Labels, labelFormat)
-		response.IncomeData = append(response.IncomeData, dailyIncome)
+		response.RevenueData = append(response.RevenueData, dailyRevenue)
+		response.GrossProfitData = append(response.GrossProfitData, dailyGrossProfit)
 		response.ExpenseData = append(response.ExpenseData, dailyExpense)
 	}
 
 	// Jika tidak ada data sama sekali (rentang 0 hari?), pastikan slice tidak nil
 	if response.Labels == nil {
 		response.Labels = []string{}
-		response.IncomeData = []float64{}
+		response.RevenueData = []float64{}
+		response.GrossProfitData = []float64{}
 		response.ExpenseData = []float64{}
 	}
 

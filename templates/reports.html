@@ -13,6 +13,8 @@
     <style>
         body {
             font-family: 'Poppins', sans-serif;
+            /* [BARU] Latar belakang global */
+            background-color: #f0f2f5;
         }
         .card-shadow {
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03);
@@ -34,23 +36,122 @@
                 opacity: 0.5;
             }
         }
+        
+        /* [BARU] Style untuk Sidebar Desktop */
+        #desktop-sidebar::-webkit-scrollbar { display: none; }
+        #desktop-sidebar { -ms-overflow-style: none; scrollbar-width: none; }
+        .sidebar-link-active {
+            background-color: #4f46e5; /* indigo-600 */
+            color: #ffffff; /* white */
+        }
+        .sidebar-link-active svg {
+            color: #ffffff; /* white */
+        }
     </style>
 </head>
-<body class="bg-gray-100">
+<!-- [DIUBAH] Tambahkan lg:flex untuk layout desktop -->
+<body class="bg-gray-100 lg:flex">
 
-    <div class="max-w-md mx-auto bg-white min-h-screen card-shadow overflow-hidden">
+    <!-- 
+      [BARU] NAVIGASI SIDEBAR DESKTOP 
+    -->
+    <nav id="desktop-sidebar" class="hidden lg:flex lg:flex-col lg:w-64 lg:flex-shrink-0 lg:overflow-y-auto bg-white border-r border-gray-200 card-shadow">
+        <div class="flex flex-col flex-grow p-4">
+            <!-- Logo atau Judul Aplikasi -->
+            <div class="flex items-center justify-center h-16 flex-shrink-0 px-4">
+                <h1 class="text-2xl font-bold text-indigo-600">Go Bisnis</h1>
+            </div>
+            
+            <!-- Menu Navigasi -->
+            <div class="flex-grow mt-5">
+                <nav class="flex-1 space-y-2">
+                    <!-- Link Dashboard -->
+                    <a href="/dashboard.html" class="flex items-center px-4 py-3 rounded-lg text-gray-600 hover:bg-indigo-500 hover:text-white transition-colors duration-200 group">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-home mr-3 text-gray-400 group-hover:text-white"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                        <span class="font-medium">Home</span>
+                    </a>
+                    
+                    <!-- Link Laporan (Aktif) -->
+                    <a href="/reports.html" class="sidebar-link-active flex items-center px-4 py-3 rounded-lg text-gray-700 hover:bg-indigo-500 hover:text-white transition-colors duration-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bar-chart-3 mr-3"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+                        <span class="font-medium">Laporan</span>
+                    </a>
+                    
+                    <!-- Link Produk -->
+                    <a href="/products.html" class="flex items-center px-4 py-3 rounded-lg text-gray-600 hover:bg-indigo-500 hover:text-white transition-colors duration-200 group">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-package mr-3 text-gray-400 group-hover:text-white"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                        <span class="font-medium">Produk</span>
+                    </a>
+
+                    <!-- Link Pengaturan -->
+                    <a href="/settings.html" class="flex items-center px-4 py-3 rounded-lg text-gray-600 hover:bg-indigo-500 hover:text-white transition-colors duration-200 group">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings mr-3 text-gray-400 group-hover:text-white"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 0-2 0l-.15-.08a2 2 0 0 0-2.73 2.73l.09.15a2 2 0 0 0 0 2l-.25.43a2 2 0 0 0-1.73 1H2a2 2 0 0 0-2 2v.44a2 2 0 0 0 2 2h.18a2 2 0 0 1 1.73 1l.25.43a2 2 0 0 0 0 2l-.08.15a2 2 0 0 0 2.73 2.73l.15-.08a2 2 0 0 0 2 0l.43-.25a2 2 0 0 1 1.73 1v.18a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 0 2 0l.15.08a2 2 0 0 0 2.73-2.73l-.09-.15a2 2 0 0 0 0 2l.25-.43a2 2 0 0 0 1.73-1H22a2 2 0 0 0 2-2v-.44a2 2 0 0 0-2-2h-.18a2 2 0 0 1-1.73-1l-.25-.43a2 2 0 0 0 0-2l.08-.15a2 2 0 0 0-2.73-2.73l-.15.08a2 2 0 0 0-2 0l-.43.25a2 2 0 0 1-1.73-1V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <span class="font-medium">Pengaturan</span>
+                    </a>
+                </nav>
+            </div>
+            
+            <!-- Tombol Aksi Utama (CTA) Sidebar -->
+            <div class="mt-auto mb-4">
+                <a href="/add-transaction.html" class="flex items-center justify-center bg-indigo-600 text-white w-full py-3 px-4 rounded-lg shadow-lg hover:bg-indigo-700 transition-colors duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus mr-2"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                    <span class="font-medium">Transaksi Baru</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+    <!-- [AKHIR] SIDEBAR DESKTOP -->
+
+    <!-- 
+      [DIUBAH] KONTAINER KONTEN UTAMA
+    -->
+    <div class="max-w-md mx-auto bg-white min-h-screen card-shadow overflow-hidden lg:flex-1 lg:max-w-none lg:mx-0">
         
         <!-- 1. Header Halaman -->
         <header class="flex justify-between items-center p-5 pb-3 bg-white sticky top-0 z-10 card-shadow">
             <h1 class="text-xl font-bold text-gray-900">Laporan Transaksi</h1>
-            <!-- (Opsional) Di sini bisa ditambahkan filter tanggal nanti -->
+            <div class="w-10 lg:hidden"></div> <!-- Placeholder untuk menyeimbangkan header di mobile -->
         </header>
 
         <!-- 2. Konten Utama (Daftar Semua Transaksi) -->
-        <main class="p-5 pb-24">
+        <!-- [DIUBAH] Tambahkan lg:p-8 -->
+        <main class="p-5 pb-24 lg:p-8">
             
-            <!-- [BARU] Search Bar -->
-            <div class="mb-4 relative">
+            <!-- [DIUBAH] Bagian Jenis Laporan -->
+            <section class="mb-5 space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
+                <h2 class="text-lg font-semibold text-gray-900 lg:col-span-2">Analitik Laporan</h2>
+                
+                <!-- Tautan ke Laporan Performa Produk -->
+                <a href="/product-performance.html" class="flex items-center justify-between p-4 bg-white rounded-xl card-shadow hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-purple-100 rounded-lg">
+                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-600 lucide lucide-trending-up"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+                        </div>
+                        <span class="ml-3 font-medium text-gray-800">Laporan Performa Produk</span>
+                    </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400 lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"/></svg>
+                </a>
+
+                <!-- Tautan ke Laporan Buku Besar -->
+                <a href="/general-ledger.html" class="flex items-center justify-between p-4 bg-white rounded-xl card-shadow hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-blue-100 rounded-lg">
+                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600 lucide lucide-book-text"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/><path d="M8 7h6"/><path d="M8 11h8"/></svg>
+                        </div>
+                        <span class="ml-3 font-medium text-gray-800">Buku Besar (Jurnal Kas)</span>
+                    </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400 lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"/></svg>
+                </a>
+            </section>
+    
+            <!-- Garis Pemisah -->
+            <hr class="border-gray-200 mb-4">
+
+            <h2 class="text-lg font-semibold text-gray-900 mb-3">Riwayat Transaksi</h2>
+
+            <!-- Search Bar -->
+            <!-- [DIUBAH] Search Bar (dibuat lebih lebar di desktop) -->
+            <div class="mb-4 relative lg:max-w-md">
                 <input type="text" id="searchBarReports" placeholder="Cari item, pelanggan, atau catatan..."
                        class="w-full pl-10 pr-4 py-3 bg-gray-100 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -94,8 +195,8 @@
         </main>
 
         <!-- 3. Navigasi Bawah (Bottom Navigation Bar) -->
-        <!-- Tautan sudah benar dari update sebelumnya -->
-        <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-100 bottom-nav-shadow">
+        <!-- [DIUBAH] Tambahkan lg:hidden -->
+        <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-100 bottom-nav-shadow lg:hidden">
             <div class="flex justify-around items-center h-16">
                 <!-- Item Nav: Home -->
                 <a href="/dashboard.html" class="flex flex-col items-center justify-center text-gray-500 hover:text-indigo-600 transition-colors duration-200">
