@@ -12,10 +12,10 @@ type CreateTransactionItemInput struct {
 
 // CreateTransactionInput adalah DTO untuk membuat transaksi baru
 type CreateTransactionInput struct {
-	Type     models.TransactionType       `json:"type" binding:"required"` // "INCOME" atau "EXPENSE"
-	Customer string                       `json:"customer"`
-	Notes    string                       `json:"notes"`
-	Items    []CreateTransactionItemInput `json:"items" binding:"required,min=1"` // Harus ada minimal 1 item
+	Type       models.TransactionType       `json:"type" binding:"required"` // "INCOME" atau "EXPENSE"
+	Notes      string                       `json:"notes"`
+	Items      []CreateTransactionItemInput `json:"items" binding:"required,min=1"` // Harus ada minimal 1 item
+	CustomerID *uint                        `json:"customer_id"`                    // <-- DIUBAH: Dari 'customer' (string) menjadi 'customer_id' (*uint)
 }
 
 // TransactionItemResponse adalah DTO untuk detail item dalam respons
@@ -32,8 +32,11 @@ type TransactionResponse struct {
 	ID          uint                      `json:"id"`
 	Type        models.TransactionType    `json:"type"`
 	TotalAmount float64                   `json:"total_amount"`
-	Customer    string                    `json:"customer"`
 	Notes       string                    `json:"notes"`
 	CreatedAt   string                    `json:"created_at"`
 	Items       []TransactionItemResponse `json:"items"`
+
+	// [BARU] Informasi pelanggan yang terstruktur
+	CustomerID   *uint  `json:"customer_id"`
+	CustomerName string `json:"customer_name"` // Kita akan isi nama pelanggan di sini
 }

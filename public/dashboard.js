@@ -15,18 +15,31 @@ document.addEventListener("DOMContentLoaded", () => {
     // Ambil elemen-elemen dari HTML
     const userFullNameEl = document.getElementById("userFullName");
     const netProfitEl = document.getElementById("netProfit");
+    const netProfitLabelEl = document.getElementById("netProfitLabel"); // Label Laba Bersih
     const totalIncomeEl = document.getElementById("totalIncome");
     const totalExpenseEl = document.getElementById("totalExpense");
-    const currentMonthEl = document.getElementById("currentMonth");
+    const dateRangeLabelEl = document.getElementById("dateRangeLabel"); // Label rentang tanggal
+    const incomeLabelEl = document.getElementById("incomeLabel");
+    const expenseLabelEl = document.getElementById("expenseLabel");
     const transactionListEl = document.getElementById("transactionList");
     const logoutButton = document.getElementById("logoutButton");
+    
+    // Ambil elemen filter
+    const filterButtons = document.querySelectorAll(".filter-button");
+    
+    // Ambil elemen Grafik
+    const chartContext = document.getElementById("mainChart").getContext("2d");
+    const chartSkeleton = document.getElementById("chartSkeleton");
+    let mainChartInstance = null; // Untuk menyimpan instance Chart
+
+    // Variabel state
+    let currentFilter = "this-month"; // Filter aktif saat ini
+    let currentFilterLabel = "Bulan Ini"; // Label untuk UI
 
     // --- 2. Fungsi Helper (Sangat Profesional) ---
 
     /**
      * Helper untuk memformat angka menjadi mata uang Rupiah
-     * @param {number} amount - Jumlah angka
-     * @returns {string} - String berformat Rp 1.234.567
      */
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat("id-ID", {
@@ -39,27 +52,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /**
      * Helper untuk memanggil API kita dengan header otorisasi
-     * Ini adalah praktik yang sangat baik untuk menghindari pengulangan kode
-     * @param {string} url - URL API (misal: "/api/v1/profile")
-     * @param {object} options - Opsi fetch (method, body, dll.)
      */
     const fetchWithAuth = async (url, options = {}) => {
-        // Siapkan header default
         const headers = {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`, // <-- Kunci utamanya di sini
+            "Authorization": `Bearer ${token}`, 
             ...options.headers,
         };
 
         const response = await fetch(url, { ...options, headers });
 
-        // GUARD: Jika token tidak valid atau kedaluwarsa (error 401)
         if (response.status === 401) {
-            // Hapus token yang rusak/kedaluwarsa
             localStorage.removeItem("goBisnisToken");
-            // Tendang ke halaman login
             window.location.href = "/";
-            return; // Hentikan
+            return;
         }
 
         if (!response.ok) {
@@ -68,6 +74,48 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         return response.json();
+    };
+
+    /**
+     * [BARU] Helper untuk menghitung rentang tanggal
+     * @returns {string} - Query string (misal: "?from=...&to=...")
+     */
+    const getDateRangeQuery = () => {
+        const now = new Date();
+        let startDate, endDate;
+        endDate = new Date(); // Selalu berakhir hari ini (sampai akhir hari)
+        endDate.setHours(23, 59, 59, 999);
+
+        switch (currentFilter) {
+            case "last-7-days":
+                startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+                currentFilterLabel = "7 Hari Terakhir";
+                dateRangeLabelEl.textContent = `${startDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })} - ${endDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}`;
+                break;
+            
+            case "last-month":
+                startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                endDate = new Date(now.getFullYear(), now.getMonth(), 0); // Hari terakhir bulan lalu
+                currentFilterLabel = "Bulan Lalu";
+                dateRangeLabelEl.textContent = startDate.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+                break;
+            
+            case "this-month":
+            default:
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                currentFilterLabel = "Bulan Ini";
+                dateRangeLabelEl.textContent = startDate.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+                break;
+        }
+        
+        // Set awal hari untuk startDate
+        startDate.setHours(0, 0, 0, 0);
+
+        // Format ke RFC3339 (ISO string) yang dimengerti Go
+        const fromQuery = `from=${startDate.toISOString()}`;
+        const toQuery = `to=${endDate.toISOString()}`;
+        
+        return `?${fromQuery}&${toQuery}`;
     };
 
     // --- 3. Memuat Data dari API ---
@@ -85,19 +133,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Fungsi untuk memuat statistik dashboard
     const loadDashboardStats = async () => {
+        const dateQuery = getDateRangeQuery(); // Dapatkan query string tanggal
+        
         try {
-            const stats = await fetchWithAuth("/api/v1/dashboard/stats");
+            const stats = await fetchWithAuth(`/api/v1/dashboard/stats${dateQuery}`);
             
             // Isi data ke elemen HTML
             netProfitEl.textContent = formatCurrency(stats.net_profit);
             totalIncomeEl.textContent = formatCurrency(stats.total_income);
             totalExpenseEl.textContent = formatCurrency(stats.total_expense);
             
-            // Tampilkan bulan ini (contoh: November 2025)
-            currentMonthEl.textContent = new Date().toLocaleDateString("id-ID", {
-                month: "long",
-                year: "numeric",
-            });
+            // Perbarui label
+            netProfitLabelEl.textContent = `Laba Bersih (${currentFilterLabel})`;
+            incomeLabelEl.textContent = currentFilterLabel;
+            expenseLabelEl.textContent = currentFilterLabel;
 
         } catch (error) {
             console.error("Error loading dashboard stats:", error);
@@ -110,13 +159,15 @@ document.addEventListener("DOMContentLoaded", () => {
     // Fungsi untuk memuat transaksi terakhir
     const loadTransactions = async () => {
         try {
+            // Catatan: API /api/v1/transactions belum difilter tanggal,
+            // jadi ini akan selalu menampilkan 5 transaksi TERBARU secara keseluruhan.
+            // (Untuk performa lebih baik, idealnya API ini juga difilter)
             const transactions = await fetchWithAuth("/api/v1/transactions");
 
-            // Kosongkan placeholder loading
-            transactionListEl.innerHTML = "";
+            transactionListEl.innerHTML = ""; // Kosongkan placeholder loading
 
-            if (transactions.length === 0) {
-                transactionListEl.innerHTML = `<p class="text-gray-500 text-center">Belum ada transaksi bulan ini.</p>`;
+            if (!transactions || transactions.length === 0) {
+                transactionListEl.innerHTML = `<p class="text-gray-500 text-center">Belum ada transaksi.</p>`;
                 return;
             }
 
@@ -128,31 +179,31 @@ document.addEventListener("DOMContentLoaded", () => {
                 const amountClass = isIncome ? "text-green-600" : "text-red-600";
                 const sign = isIncome ? "+" : "-";
                 
-                // Ambil deskripsi item pertama sebagai judul
                 const title = tx.items[0]?.product_name || "Transaksi";
                 const date = new Date(tx.created_at).toLocaleDateString("id-ID", {
                     day: "numeric",
-                    month: "short",
-                    year: "numeric"
+                    month: "short"
                 });
 
-                // Buat elemen HTML untuk setiap transaksi
+                // [DIUBAH] Gunakan customer_name dari API
+                const customerName = tx.customer_name || "Umum"; 
+
                 const txElement = document.createElement("div");
                 txElement.className = "flex items-center p-4 bg-white rounded-xl card-shadow";
                 txElement.innerHTML = `
                     <div class="p-2.5 ${iconBgClass} rounded-lg flex-shrink-0">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${iconClass}">
                             ${isIncome ? 
-                                `<circle cx="12" cy="12" r="10"/><path d="m8 12 4-4 4 4"/><path d="M12 16V8"/>` : 
-                                `<circle cx="12" cy="12" r="10"/><path d="m16 12-4 4-4-4"/><path d="M12 8v8"/>`
+                                `<path d="M12 5v14"/> <path d="m17 14-5-5-5 5"/>` : 
+                                `<path d="M12 5v14"/> <path d="m17 10-5 5-5-5"/>`
                             }
                         </svg>
                     </div>
                     <div class="flex-1 ml-4">
-                        <p class="text-base font-medium text-gray-900">${title}</p>
-                        <p class="text-xs text-gray-500 mt-0.5">${date} • ${tx.customer || 'Umum'}</p>
+                        <p class="text-base font-medium text-gray-900 truncate">${title}</p>
+                        <p class="text-xs text-gray-500 mt-0.5">${date} • ${customerName}</p>
                     </div>
-                    <span class="text-base font-semibold ${amountClass} flex-shrink-0">
+                    <span class="text-base font-semibold ${amountClass} flex-shrink-0 ml-2">
                         ${sign} ${formatCurrency(tx.total_amount)}
                     </span>
                 `;
@@ -166,16 +217,124 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    // --- 4. Event Listener Logout ---
+    /**
+     * [BARU] Fungsi untuk memuat dan menggambar grafik
+     */
+    const loadDashboardChart = async () => {
+        const dateQuery = getDateRangeQuery();
+        
+        // Tampilkan skeleton, sembunyikan canvas
+        chartSkeleton.classList.remove("hidden");
+        chartContext.canvas.style.display = 'none';
+
+        if (mainChartInstance) {
+            mainChartInstance.destroy(); // Hancurkan grafik lama
+        }
+        
+        try {
+            const chartData = await fetchWithAuth(`/api/v1/dashboard/chart${dateQuery}`);
+            
+            // Sembunyikan skeleton, tampilkan canvas
+            chartSkeleton.classList.add("hidden");
+            chartContext.canvas.style.display = 'block';
+
+            mainChartInstance = new Chart(chartContext, {
+                type: 'line',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [
+                        {
+                            label: 'Pemasukan',
+                            data: chartData.income_data,
+                            borderColor: '#22c55e', // green-500
+                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                            fill: true,
+                            tension: 0.3,
+                        },
+                        {
+                            label: 'Pengeluaran',
+                            data: chartData.expense_data,
+                            borderColor: '#ef4444', // red-500
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            fill: true,
+                            tension: 0.3,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                // Format Sumbu Y sebagai mata uang (K, Jt)
+                                callback: function(value, index, values) {
+                                    if (value >= 1000000) return (value / 1000000) + ' Jt';
+                                    if (value >= 1000) return (value / 1000) + ' K';
+                                    return value;
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += formatCurrency(context.parsed.y);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+        } catch (error) {
+            console.error("Error loading chart data:", error);
+            chartSkeleton.innerHTML = `<p class="text-red-500 text-center">Gagal memuat grafik.</p>`;
+            chartSkeleton.classList.remove("hidden"); // Tampilkan pesan error
+        }
+    };
+
+    // --- 4. Event Listeners ---
+
+    // Fungsi untuk me-refresh semua data
+    const refreshAllData = () => {
+        loadDashboardStats();
+        loadDashboardChart();
+        // loadTransactions(); // Transaksi terakhir tidak perlu difilter
+    };
+
+    // Event listener untuk tombol filter
+    filterButtons.forEach(button => {
+        button.addEventListener("click", () => {
+            // Update state
+            currentFilter = button.dataset.filter;
+            
+            // Update UI tombol
+            filterButtons.forEach(btn => btn.classList.remove("active"));
+            button.classList.add("active");
+            
+            // Refresh data
+            refreshAllData();
+        });
+    });
+
+    // Event Listener Logout
     logoutButton.addEventListener("click", () => {
-        // Hapus token dari penyimpanan
         localStorage.removeItem("goBisnisToken");
-        // Arahkan kembali ke halaman login
         window.location.href = "/";
     });
 
-    // --- 5. Jalankan Semua Fungsi Load ---
+    // --- 5. Jalankan Semua Fungsi Load Awal ---
     loadProfile();
-    loadDashboardStats();
-    loadTransactions();
+    loadTransactions(); // Muat transaksi terakhir (tidak tergantung filter)
+    refreshAllData(); // Muat statistik + grafik (tergantung filter default)
 });

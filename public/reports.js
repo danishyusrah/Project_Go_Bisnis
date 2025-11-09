@@ -14,6 +14,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Ambil elemen dari HTML
     const transactionListEl = document.getElementById("transaction-list-full");
+    const searchBar = document.getElementById("searchBarReports"); // <-- [BARU] Ambil search bar
+    let debounceTimer; // <-- [BARU] Timer untuk debounce
 
     // --- 2. Fungsi Helper ---
 
@@ -49,21 +51,51 @@ document.addEventListener("DOMContentLoaded", () => {
             const errorData = await response.json();
             throw new Error(errorData.error || "Gagal mengambil data");
         }
+        // Handle 204 No Content (jika ada)
+        if (response.status === 204) {
+            return null;
+        }
         return response.json();
     };
 
     // --- 3. Memuat Data Laporan Transaksi ---
 
-    const loadAllTransactions = async () => {
+    /**
+     * [DIPERBARUI] loadAllTransactions sekarang menerima query pencarian
+     * @param {string} searchQuery - Teks yang akan dicari
+     */
+    const loadAllTransactions = async (searchQuery = "") => {
         try {
+            // Tampilkan skeleton loader (berguna saat mencari)
+            transactionListEl.innerHTML = `
+                <div class="flex items-center p-4 bg-white rounded-xl card-shadow">
+                    <div class="p-2.5 skeleton rounded-lg flex-shrink-0 h-10 w-10"></div>
+                    <div class="flex-1 ml-4 space-y-2">
+                        <p class="skeleton h-4 w-3/4"></p>
+                        <p class="skeleton h-3 w-1/2"></p>
+                    </div>
+                    <span class="skeleton h-5 w-20"></span>
+                </div>`;
+
+            // [BARU] Tambahkan query ke URL jika ada
+            let apiUrl = "/api/v1/transactions";
+            if (searchQuery) {
+                apiUrl += `?search=${encodeURIComponent(searchQuery)}`;
+            }
+
             // Panggil API untuk mengambil SEMUA transaksi
-            const transactions = await fetchWithAuth("/api/v1/transactions");
+            // API ini sekarang juga mengembalikan 'customer_name'
+            const transactions = (await fetchWithAuth(apiUrl)) || [];
 
             // Kosongkan placeholder loading
             transactionListEl.innerHTML = "";
 
             if (transactions.length === 0) {
-                transactionListEl.innerHTML = `<p class="text-gray-500 text-center py-10">Belum ada transaksi yang tercatat.</p>`;
+                 if (searchQuery) {
+                    transactionListEl.innerHTML = `<p class="text-gray-500 text-center py-10">Transaksi "${searchQuery}" tidak ditemukan.</p>`;
+                } else {
+                    transactionListEl.innerHTML = `<p class="text-gray-500 text-center py-10">Belum ada transaksi yang tercatat.</p>`;
+                }
                 return;
             }
 
@@ -75,9 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const amountClass = isIncome ? "text-green-600" : "text-red-600";
                 const sign = isIncome ? "+" : "-";
                 
-                // Ambil deskripsi item pertama sebagai judul
                 const title = tx.items[0]?.product_name || "Transaksi";
-                // Format tanggal yang lebih detail untuk laporan
                 const date = new Date(tx.created_at).toLocaleDateString("id-ID", {
                     day: "numeric",
                     month: "short",
@@ -86,23 +116,24 @@ document.addEventListener("DOMContentLoaded", () => {
                     minute: '2-digit'
                 });
 
-                // Buat elemen HTML untuk setiap transaksi
+                const customerName = tx.customer_name; // API sudah memberi default "Umum"
+
                 const txElement = document.createElement("div");
                 txElement.className = "flex items-center p-4 bg-white rounded-xl card-shadow";
                 txElement.innerHTML = `
                     <div class="p-2.5 ${iconBgClass} rounded-lg flex-shrink-0">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${iconClass}">
                             ${isIncome ? 
-                                `<circle cx="12" cy="12" r="10"/><path d="m8 12 4-4 4 4"/><path d="M12 16V8"/>` : 
-                                `<circle cx="12" cy="12" r="10"/><path d="m16 12-4 4-4-4"/><path d="M12 8v8"/>`
+                                `<path d="M12 5v14"/> <path d="m17 14-5-5-5 5"/>` : 
+                                `<path d="M12 5v14"/> <path d="m17 10-5 5-5-5"/>`
                             }
                         </svg>
                     </div>
-                    <div class="flex-1 ml-4">
-                        <p class="text-base font-medium text-gray-900">${title}</p>
-                        <p class="text-xs text-gray-500 mt-0.5">${date} • ${tx.customer || 'Umum'}</p>
+                    <div class="flex-1 ml-4 min-w-0">
+                        <p class="text-base font-medium text-gray-900 truncate">${title}</p>
+                        <p class="text-xs text-gray-500 mt-0.5">${date} • ${customerName}</p>
                     </div>
-                    <span class="text-base font-semibold ${amountClass} flex-shrink-0">
+                    <span class="text-base font-semibold ${amountClass} flex-shrink-0 ml-2">
                         ${sign} ${formatCurrency(tx.total_amount)}
                     </span>
                 `;
@@ -116,6 +147,19 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    // --- 4. Jalankan Fungsi Load ---
-    loadAllTransactions();
+    // --- 4. Event Listeners ---
+
+    // [BARU] Event listener untuk Search Bar (dengan Debounce)
+    searchBar.addEventListener("input", (e) => {
+        clearTimeout(debounceTimer);
+        const query = e.target.value;
+
+        debounceTimer = setTimeout(() => {
+            loadAllTransactions(query);
+        }, 300); // Jeda 300ms
+    });
+
+
+    // --- 5. Jalankan Fungsi Load ---
+    loadAllTransactions(); // Muat data awal (tanpa pencarian)
 });

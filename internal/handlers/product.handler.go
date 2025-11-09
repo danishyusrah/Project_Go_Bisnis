@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/danishyusrah/go_bisnis/internal/dto"
-	"github.com/danishyusrah/go_bisnis/internal/models" // <-- TAMBAHKAN INI
+	"github.com/danishyusrah/go_bisnis/internal/models"
 	"github.com/danishyusrah/go_bisnis/internal/services"
 	"github.com/gin-gonic/gin"
 )
@@ -82,7 +82,12 @@ func (h *ProductHandler) GetUserProducts(c *gin.Context) {
 		return
 	}
 
-	products, err := h.Service.GetUserProducts(userID)
+	// [BARU] Ambil query parameter "search" dari URL
+	// Cth: /api/v1/products?search=kopi
+	searchQuery := c.Query("search")
+
+	// [DIPERBARUI] Kirim searchQuery ke service
+	products, err := h.Service.GetUserProducts(userID, searchQuery)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data produk"})
 		return

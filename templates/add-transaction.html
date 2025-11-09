@@ -62,13 +62,24 @@
             <!-- Detail Transaksi (Pelanggan, Catatan) -->
             <div class="bg-white p-4 rounded-xl card-shadow space-y-4">
                 <h2 class="text-lg font-semibold text-gray-900">Detail</h2>
+                
+                <!-- [DIUBAH] Mengganti Input Teks menjadi Dropdown Select -->
                 <div>
-                    <!-- ID 'customerLabel' akan diubah oleh JS (Pelanggan/Supplier) -->
-                    <label id="customerLabel" for="customer" class="block text-sm font-medium text-gray-700">Nama Pelanggan</label>
-                    <input type="text" id="customer" name="customer"
-                        class="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                        placeholder="Cth: John Doe">
+                    <div class="flex justify-between items-center">
+                        <label id="customerLabel" for="customer_id" class="block text-sm font-medium text-gray-700">Pelanggan/Supplier</label>
+                        <!-- Tautan ini akan kita buat nanti, tapi UI-nya kita siapkan -->
+                        <a href="/customers.html" class="text-sm font-medium text-indigo-600 hover:text-indigo-500">
+                            + Pelanggan Baru
+                        </a>
+                    </div>
+                    <!-- ID 'customer_id' akan diisi oleh JS -->
+                    <select id="customer_id" name="customer_id"
+                        class="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="">-- Umum (Tanpa Pelanggan) --</option>
+                        <!-- Daftar pelanggan akan dimuat oleh JavaScript di sini -->
+                    </select>
                 </div>
+
                 <div>
                     <label for="notes" class="block text-sm font-medium text-gray-700">Catatan (Opsional)</label>
                     <textarea id="notes" name="notes" rows="2"
@@ -143,10 +154,11 @@
         JavaScript kustom untuk halaman ini.
         Akan menangani:
         1. Pengecekan token (Guard)
-        2. Memuat daftar produk ke <select>
-        3. Menambah/menghapus baris item secara dinamis
-        4. Menghitung total secara otomatis
-        5. Mengirim data form ke API /api/v1/transactions
+        2. Memuat daftar produk KE <select>
+        3. [BARU] Memuat daftar pelanggan KE <select>
+        4. Menambah/menghapus baris item secara dinamis
+        5. Menghitung total secara otomatis
+        6. [BARU] Mengirim 'customer_id' ke API /api/v1/transactions
     -->
     <script src="/static/add-transaction.js"></script>
 

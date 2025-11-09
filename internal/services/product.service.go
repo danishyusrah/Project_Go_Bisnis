@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt" // <-- Impor 'fmt' untuk string formatting
 
 	"github.com/danishyusrah/go_bisnis/internal/database"
 	"github.com/danishyusrah/go_bisnis/internal/dto"
@@ -40,12 +41,25 @@ func (s *ProductService) CreateProduct(input dto.CreateProductInput, userID uint
 }
 
 // GetUserProducts mengambil semua produk yang dimiliki oleh user
-func (s *ProductService) GetUserProducts(userID uint) ([]models.Product, error) {
+// [DIPERBARUI] Sekarang menerima 'searchQuery'
+func (s *ProductService) GetUserProducts(userID uint, searchQuery string) ([]models.Product, error) {
 	var products []models.Product
 	db := database.DB
 
-	// HANYA mengambil produk milik userID yang sedang login
-	if err := db.Where("user_id = ?", userID).Find(&products).Error; err != nil {
+	// Mulai query dengan filter UserID dan urutkan berdasarkan nama
+	query := db.Where("user_id = ?", userID).Order("name asc")
+
+	// [BARU] Tambahkan kondisi WHERE jika ada searchQuery
+	if searchQuery != "" {
+		// Buat format 'LIKE' (misal: "kopi" -> "%kopi%")
+		searchTerm := fmt.Sprintf("%%%s%%", searchQuery)
+
+		// Cari di kolom 'name' ATAU 'sku'
+		query = query.Where("name LIKE ? OR sku LIKE ?", searchTerm, searchTerm)
+	}
+
+	// Eksekusi query
+	if err := query.Find(&products).Error; err != nil {
 		return nil, err
 	}
 	return products, nil

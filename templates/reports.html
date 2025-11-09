@@ -49,6 +49,18 @@
         <!-- 2. Konten Utama (Daftar Semua Transaksi) -->
         <main class="p-5 pb-24">
             
+            <!-- [BARU] Search Bar -->
+            <div class="mb-4 relative">
+                <input type="text" id="searchBarReports" placeholder="Cari item, pelanggan, atau catatan..."
+                       class="w-full pl-10 pr-4 py-3 bg-gray-100 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                </div>
+            </div>
+
             <!-- Kontainer untuk daftar transaksi, akan diisi oleh JavaScript -->
             <!-- ID 'transaction-list-full' -->
             <div id="transaction-list-full" class="space-y-3">
@@ -82,7 +94,7 @@
         </main>
 
         <!-- 3. Navigasi Bawah (Bottom Navigation Bar) -->
-        <!-- [PERBAIKAN] Tautan "Pengaturan" diperbarui -->
+        <!-- Tautan sudah benar dari update sebelumnya -->
         <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-100 bottom-nav-shadow">
             <div class="flex justify-around items-center h-16">
                 <!-- Item Nav: Home -->
@@ -99,7 +111,7 @@
                 
                 <!-- Tombol Aksi Utama (CTA): Tambah Transaksi -->
                 <a href="/add-transaction.html" class="flex items-center justify-center bg-indigo-600 text-white w-14 h-14 rounded-full -mt-8 shadow-lg hover:bg-indigo-700 transition-all duration-200 ease-in-out transform hover:scale-105">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
                 </a>
                 
                 <!-- Item Nav: Produk/Stok -->

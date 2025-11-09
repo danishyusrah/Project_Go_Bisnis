@@ -44,10 +44,11 @@ func main() {
 // setupRoutes memisahkan definisi rute dari main() agar tetap bersih
 func setupRoutes(router *gin.Engine) {
 
-	// Inisialisasi semua handler (dari Tahap 3, 4, 5)
+	// Inisialisasi semua handler
 	productHandler := handlers.NewProductHandler()
 	transactionHandler := handlers.NewTransactionHandler()
 	dashboardHandler := handlers.NewDashboardHandler()
+	customerHandler := handlers.NewCustomerHandler() // <-- BARU DITAMBAHKAN
 
 	// --- Rute Halaman Web (Frontend) ---
 	// Grup ini menangani penyajian file HTML
@@ -102,17 +103,24 @@ func setupRoutes(router *gin.Engine) {
 			})
 		})
 
-		// Halaman Laporan (Tahap 10) <-- BARU DITAMBAHKAN
+		// Halaman Laporan (Tahap 10)
 		web.GET("/reports.html", func(c *gin.Context) {
 			c.HTML(http.StatusOK, "reports.html", gin.H{
 				"title": "Laporan Transaksi - Go Bisnis",
 			})
 		})
 
-		// Halaman Pengaturan (Tahap 11) <-- BARU
+		// Halaman Pengaturan (Tahap 11)
 		web.GET("/settings.html", func(c *gin.Context) {
 			c.HTML(http.StatusOK, "settings.html", gin.H{
 				"title": "Pengaturan Akun - Go Bisnis",
+			})
+		})
+
+		// [BARU] Halaman Manajemen Pelanggan (Fitur #3)
+		web.GET("/customers.html", func(c *gin.Context) {
+			c.HTML(http.StatusOK, "customers.html", gin.H{
+				"title": "Manajemen Pelanggan - Go Bisnis",
 			})
 		})
 	}
@@ -138,7 +146,7 @@ func setupRoutes(router *gin.Engine) {
 			// Rute Profil (Tahap 2)
 			protected.GET("/profile", handlers.GetProfile)
 
-			// Rute Pengaturan Profil (Tahap 11) <-- BARU
+			// Rute Pengaturan Profil (Tahap 11)
 			protected.PUT("/profile", handlers.UpdateProfile)   // Update data profil
 			protected.PUT("/password", handlers.UpdatePassword) // Update password
 
@@ -149,13 +157,21 @@ func setupRoutes(router *gin.Engine) {
 			protected.PUT("/products/:id", productHandler.UpdateProduct)
 			protected.DELETE("/products/:id", productHandler.DeleteProduct)
 
+			// [BARU] Rute Customer (Fitur #3)
+			protected.POST("/customers", customerHandler.CreateCustomer)
+			protected.GET("/customers", customerHandler.GetUserCustomers)
+			protected.GET("/customers/:id", customerHandler.GetCustomerByID)
+			protected.PUT("/customers/:id", customerHandler.UpdateCustomer)
+			protected.DELETE("/customers/:id", customerHandler.DeleteCustomer)
+
 			// Rute Transaksi (Tahap 4)
 			protected.POST("/transactions", transactionHandler.CreateTransaction)
 			protected.GET("/transactions", transactionHandler.GetUserTransactions)
 			protected.GET("/transactions/:id", transactionHandler.GetTransactionByID)
 
-			// Rute Dashboard (Tahap 5)
+			// Rute Dashboard (Tahap 5 & Fitur #2)
 			protected.GET("/dashboard/stats", dashboardHandler.GetDashboardStats)
+			protected.GET("/dashboard/chart", dashboardHandler.GetDashboardChartData)
 		}
 	}
 }

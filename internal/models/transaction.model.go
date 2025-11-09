@@ -19,7 +19,13 @@ type Transaction struct {
 	Type        TransactionType `gorm:"not null;index"`
 	TotalAmount float64         `gorm:"not null;type:decimal(10,2)"`
 	Notes       string
-	Customer    string // Nama pelanggan atau supplier (dibuat simpel)
+	// Customer    string // <-- DIHAPUS: Ini diganti dengan CustomerID
+
+	// [BARU] Relasi ke Customer (Nullable)
+	// Kita menggunakan pointer (*uint) agar bisa bernilai 'nil' (NULL)
+	// Ini penting, karena Pengeluaran (Expense) mungkin tidak memiliki pelanggan.
+	CustomerID *uint     `gorm:"index"`                 // Foreign key ke Customer (nullable)
+	Customer   *Customer `gorm:"foreignKey:CustomerID"` // Relasi GORM (nullable)
 
 	// Relasi: Sebuah Transaksi memiliki banyak Item
 	Items []TransactionItem `gorm:"foreignKey:TransactionID"`

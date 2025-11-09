@@ -12,14 +12,16 @@ document.addEventListener("DOMContentLoaded", () => {
         return; // Hentikan eksekusi skrip
     }
 
-    // Variabel global untuk menyimpan daftar produk yang diambil dari API
+    // Variabel global untuk menyimpan daftar
     let userProducts = [];
+    let userCustomers = []; // <-- BARU: Untuk menyimpan daftar pelanggan
 
     // Ambil elemen-elemen form
     const transactionForm = document.getElementById("transactionForm");
     const typeIncome = document.getElementById("type_income");
     const typeExpense = document.getElementById("type_expense");
     const customerLabel = document.getElementById("customerLabel");
+    const customerSelectEl = document.getElementById("customer_id"); // <-- BARU: Dropdown pelanggan
     const itemList = document.getElementById("item-list");
     const addItemButton = document.getElementById("add-item-button");
     const totalAmountEl = document.getElementById("totalAmount");
@@ -60,6 +62,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const errorData = await response.json();
             throw new Error(errorData.error || "Gagal mengambil data");
         }
+        // Handle 204 No Content (untuk DELETE)
+        if (response.status === 204) {
+            return null;
+        }
         return response.json();
     };
 
@@ -80,34 +86,69 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     /**
+     * [BARU] Memuat pelanggan milik user dari API
+     */
+    const loadCustomers = async () => {
+        try {
+            const customers = (await fetchWithAuth("/api/v1/customers")) || [];
+            userCustomers = customers;
+            updateCustomerDropdown();
+        } catch (error) {
+            console.error("Gagal memuat pelanggan:", error);
+            const option = document.createElement("option");
+            option.textContent = "Gagal memuat pelanggan";
+            option.disabled = true;
+            customerSelectEl.appendChild(option);
+        }
+    };
+
+    /**
      * Mengisi <select> produk di semua baris item
      */
     const updateProductDropdowns = () => {
         const selects = document.querySelectorAll(".product-select");
         selects.forEach(select => {
-            // Simpan value yang sedang dipilih (jika ada)
             const selectedValue = select.value;
-            
-            // Kosongkan opsi (kecuali yang default)
             select.innerHTML = `
                 <option value="">-- Pilih Produk --</option>
                 <option value="other">Lainnya (Nama Kustom)</option>
             `;
             
-            // Tambahkan produk dari API
-            userProducts.forEach(product => {
+            (userProducts || []).forEach(product => {
                 const option = document.createElement("option");
                 option.value = product.id;
                 option.textContent = `${product.name} (Stok: ${product.stock})`;
-                // Set data-price agar bisa auto-fill harga
                 option.dataset.price = product.selling_price;
                 select.appendChild(option);
             });
-
-            // Set kembali value yang tadi dipilih
             select.value = selectedValue;
         });
     };
+
+    /**
+     * [BARU] Mengisi <select> pelanggan
+     */
+    const updateCustomerDropdown = () => {
+        if (!customerSelectEl) return;
+        
+        const selectedValue = customerSelectEl.value;
+        customerSelectEl.innerHTML = `<option value="">-- Umum (Tanpa Pelanggan) --</option>`;
+        
+        (userCustomers || []).forEach(customer => {
+            const option = document.createElement("option");
+            option.value = customer.id;
+            // Tampilkan nama dan telepon jika ada
+            let customerText = customer.name;
+            if (customer.phone) {
+                customerText += ` (${customer.phone})`;
+            }
+            option.textContent = customerText;
+            customerSelectEl.appendChild(option);
+        });
+
+        customerSelectEl.value = selectedValue;
+    };
+
 
     /**
      * Meng-update UI berdasarkan tipe transaksi (INCOME/EXPENSE)
@@ -115,6 +156,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const updateFormForType = () => {
         const isIncome = typeIncome.checked;
         
+        // [DIUBAH] Label tetap diubah, tapi dropdown pelanggan/supplier tetap terlihat
         customerLabel.textContent = isIncome ? "Nama Pelanggan" : "Nama Supplier / Toko";
         
         const itemRows = document.querySelectorAll(".item-row");
@@ -125,19 +167,18 @@ document.addEventListener("DOMContentLoaded", () => {
             if (isIncome) {
                 // Tipe PEMASUKAN: Tampilkan dropdown produk
                 productSelect.classList.remove("hidden");
-                // Cek jika "Lainnya" dipilih
                 if (productSelect.value !== "other") {
                     customNameInput.classList.add("hidden");
                 }
             } else {
                 // Tipe PENGELUARAN: Sembunyikan dropdown, paksa input manual
-                productSelect.value = "other"; // Set ke "Lainnya"
+                productSelect.value = "other";
                 productSelect.classList.add("hidden");
                 customNameInput.classList.remove("hidden");
+                customNameInput.value = ""; // Kosongkan input kustom
             }
         });
         
-        // Update juga dropdown (jika baru di-load)
         if (isIncome) {
             updateProductDropdowns();
         }
@@ -191,9 +232,7 @@ document.addEventListener("DOMContentLoaded", () => {
         
         itemList.appendChild(newItemRow);
         
-        // Update dropdown di baris baru
         updateFormForType();
-        // Attach event listener ke elemen baru
         attachItemRowListeners(newItemRow);
     };
 
@@ -201,6 +240,10 @@ document.addEventListener("DOMContentLoaded", () => {
      * Menghapus baris item
      */
     const deleteItemRow = (button) => {
+        // Jangan hapus baris terakhir
+        if (document.querySelectorAll(".item-row").length <= 1) {
+            return;
+        }
         const row = button.closest(".item-row");
         row.remove();
         calculateTotal();
@@ -215,21 +258,16 @@ document.addEventListener("DOMContentLoaded", () => {
         const unitPriceInput = row.querySelector('input[name="unit_price"]');
         
         if (select.value === "other") {
-            // Tampilkan input nama kustom
             customNameInput.classList.remove("hidden");
             customNameInput.value = "";
             unitPriceInput.value = 0;
         } else if (select.value === "") {
-            // Pilihan default "-- Pilih Produk --"
             customNameInput.classList.add("hidden");
             unitPriceInput.value = 0;
         } else {
-            // Produk dari API dipilih
             customNameInput.classList.add("hidden");
-            // Auto-fill harga
             const selectedOption = select.options[select.selectedIndex];
             unitPriceInput.value = selectedOption.dataset.price || 0;
-            // Auto-fill nama (untuk dikirim ke API)
             customNameInput.value = selectedOption.textContent.split(' (Stok:')[0];
         }
         calculateTotal();
@@ -239,21 +277,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /**
      * Menambahkan event listener ke semua input dinamis
-     * Menggunakan event delegation agar efisien
      */
     const attachItemRowListeners = (row) => {
-        // Hapus item
         const deleteButton = row.querySelector(".delete-item-button");
         if (deleteButton) {
             deleteButton.addEventListener("click", () => deleteItemRow(deleteButton));
         }
         
-        // Kalkulasi total
         row.querySelectorAll(".item-calc").forEach(input => {
             input.addEventListener("input", calculateTotal);
         });
 
-        // Perubahan dropdown produk
         const productSelect = row.querySelector(".product-select");
         if (productSelect) {
             productSelect.addEventListener("change", () => handleProductSelectChange(productSelect));
@@ -282,8 +316,11 @@ document.addEventListener("DOMContentLoaded", () => {
             // Kumpulkan data dari form
             const formData = new FormData(transactionForm);
             const type = formData.get("type");
-            const customer = formData.get("customer");
             const notes = formData.get("notes");
+
+            // [DIUBAH] Ambil customer_id, ubah ke null jika string kosong
+            const customerIDRaw = formData.get("customer_id");
+            const customerID = customerIDRaw ? parseInt(customerIDRaw, 10) : null;
             
             const items = [];
             const itemRows = document.querySelectorAll(".item-row");
@@ -317,10 +354,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 throw new Error("Transaksi harus memiliki minimal 1 item.");
             }
 
-            // Buat payload DTO
+            // [DIUBAH] Buat payload DTO baru
             const payload = {
                 type: type,
-                customer: customer,
+                customer_id: customerID, // <-- Diubah dari 'customer'
                 notes: notes,
                 items: items,
             };
@@ -347,6 +384,8 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // Muat daftar produk saat halaman dibuka
     loadProducts();
+    // [BARU] Muat daftar pelanggan saat halaman dibuka
+    loadCustomers(); 
     
     // Set form ke status default (Pemasukan)
     updateFormForType();

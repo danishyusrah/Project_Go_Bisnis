@@ -35,14 +35,26 @@ func toTransactionResponse(tx models.Transaction) dto.TransactionResponse {
 		})
 	}
 
+	// [BARU] Logika untuk mengisi data pelanggan
+	var customerID *uint
+	var customerName string
+	if tx.Customer != nil {
+		customerID = &tx.Customer.ID
+		customerName = tx.Customer.Name
+	} else {
+		// Jika tidak ada pelanggan terkait (misal: pengeluaran atau data lama)
+		customerName = "Umum" // Default
+	}
+
 	return dto.TransactionResponse{
-		ID:          tx.ID,
-		Type:        tx.Type,
-		TotalAmount: tx.TotalAmount,
-		Customer:    tx.Customer,
-		Notes:       tx.Notes,
-		CreatedAt:   tx.CreatedAt.Format("2006-01-02 15:04:05"),
-		Items:       items,
+		ID:           tx.ID,
+		Type:         tx.Type,
+		TotalAmount:  tx.TotalAmount,
+		Notes:        tx.Notes,
+		CreatedAt:    tx.CreatedAt.Format("2006-01-02 15:04:05"),
+		Items:        items,
+		CustomerID:   customerID,   // <-- DIISI DARI HASIL PRELOAD
+		CustomerName: customerName, // <-- DIISI DARI HASIL PRELOAD
 	}
 }
 
@@ -66,15 +78,14 @@ func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 		return
 	}
 
-	// Memuat ulang data dengan item untuk respons yang lengkap
-	// (Create di service sudah mengasosiasikan item, tapi lebih aman preload lagi)
-	txWithItems, err := h.Service.GetTransactionByID(transaction.ID, userID)
+	// Memuat ulang data dengan item DAN CUSTOMER untuk respons yang lengkap
+	txWithDetails, err := h.Service.GetTransactionByID(transaction.ID, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data transaksi setelah dibuat"})
 		return
 	}
 
-	c.JSON(http.StatusCreated, toTransactionResponse(txWithItems))
+	c.JSON(http.StatusCreated, toTransactionResponse(txWithDetails))
 }
 
 // GetUserTransactions menangani pengambilan semua transaksi user
@@ -84,7 +95,12 @@ func (h *TransactionHandler) GetUserTransactions(c *gin.Context) {
 		return
 	}
 
-	transactions, err := h.Service.GetUserTransactions(userID)
+	// [BARU] Ambil query parameter "search" dari URL
+	// Cth: /api/v1/transactions?search=kopi
+	searchQuery := c.Query("search")
+
+	// [DIPERBARUI] Kirim searchQuery ke service
+	transactions, err := h.Service.GetUserTransactions(userID, searchQuery)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data transaksi"})
 		return
