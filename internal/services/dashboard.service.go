@@ -190,3 +190,30 @@ func (s *DashboardService) GetDashboardChartData(userID uint, startTime time.Tim
 
 	return response, nil
 }
+
+// --- [BARU UNTUK FITUR STOK MINIMUM] ---
+
+// GetLowStockProducts mengambil daftar produk yang stoknya menipis
+func (s *DashboardService) GetLowStockProducts(userID uint) ([]dto.LowStockProduct, error) {
+	db := database.DB
+	var results []dto.LowStockProduct
+
+	// Query ini akan mencari produk di mana:
+	// 1. Dimiliki oleh user_id
+	// 2. Batas stok minimum sudah diatur ( > 0)
+	// 3. Stok saat ini lebih kecil atau sama dengan batas minimum tersebut
+	err := db.Model(&models.Product{}).
+		Select("id as product_id, name, stock, batas_stok_minimum").
+		Where("user_id = ? AND batas_stok_minimum > 0 AND stock <= batas_stok_minimum", userID).
+		Order("name asc").
+		Scan(&results).Error // Scan langsung ke DTO
+
+	if err != nil {
+		log.Printf("Error querying low stock products: %v", err)
+		return nil, err
+	}
+
+	return results, nil
+}
+
+// --- [AKHIR BARU] ---

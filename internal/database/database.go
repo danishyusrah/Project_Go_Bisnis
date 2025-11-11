@@ -48,6 +48,7 @@ func MigrateDatabase() {
 		&models.Transaction{},     // <-- BARU: Tambahkan model Transaction
 		&models.TransactionItem{}, // <-- BARU: Tambahkan model TransactionItem
 		&models.Customer{},        // <-- BARU: Tambahkan model Customer
+		&models.Category{},        // <-- [BARU] Tambahkan model Category
 	)
 	if err != nil {
 		log.Fatalf("Gagal menjalankan migrasi: %v", err)

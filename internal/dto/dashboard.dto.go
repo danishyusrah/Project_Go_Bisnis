@@ -22,3 +22,15 @@ type ChartDataResponse struct {
 	ExpenseData     []float64 `json:"expense_data"`      // Data Pengeluaran
 	// IncomeData (lama) dihapus
 }
+
+// --- [BARU UNTUK FITUR STOK MINIMUM] ---
+
+// LowStockProduct adalah DTO untuk satu produk yang stoknya menipis
+type LowStockProduct struct {
+	ProductID        uint   `json:"product_id"`
+	Name             string `json:"name"`
+	Stock            int    `json:"stock"`
+	BatasStokMinimum int    `json:"batas_stok_minimum"`
+}
+
+// --- [AKHIR BARU] ---

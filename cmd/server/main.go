@@ -48,8 +48,9 @@ func setupRoutes(router *gin.Engine) {
 	productHandler := handlers.NewProductHandler()
 	transactionHandler := handlers.NewTransactionHandler()
 	dashboardHandler := handlers.NewDashboardHandler()
-	customerHandler := handlers.NewCustomerHandler() // <-- BARU DITAMBAHKAN
-	reportHandler := handlers.NewReportHandler()     // <-- TAMBAHKAN INI
+	customerHandler := handlers.NewCustomerHandler()
+	reportHandler := handlers.NewReportHandler()
+	categoryHandler := handlers.NewCategoryHandler() // <-- [BARU] Inisialisasi Handler Kategori
 
 	// --- Rute Halaman Web (Frontend) ---
 	// Grup ini menangani penyajian file HTML
@@ -75,6 +76,14 @@ func setupRoutes(router *gin.Engine) {
 				"title": "Dashboard - Go Bisnis",
 			})
 		})
+
+		// --- [BARU UNTUK FITUR POS] ---
+		web.GET("/pos.html", func(c *gin.Context) {
+			c.HTML(http.StatusOK, "pos.html", gin.H{
+				"title": "Kasir (POS) - Go Bisnis",
+			})
+		})
+		// --- [AKHIR BARU] ---
 
 		// Halaman Tambah Transaksi (Tahap 7)
 		web.GET("/add-transaction.html", func(c *gin.Context) {
@@ -154,6 +163,21 @@ func setupRoutes(router *gin.Engine) {
 				"title": "Buku Besar - Go Bisnis",
 			})
 		})
+
+		// --- [BARU] Rute untuk Laporan Utang/Piutang ---
+		web.GET("/unpaid-report.html", func(c *gin.Context) {
+			c.HTML(http.StatusOK, "unpaid-report.html", gin.H{
+				"title": "Laporan Utang & Piutang - Go Bisnis",
+			})
+		})
+
+		// --- [BARU UNTUK FITUR KATEGORI] ---
+		web.GET("/categories.html", func(c *gin.Context) {
+			c.HTML(http.StatusOK, "categories.html", gin.H{
+				"title": "Manajemen Kategori - Go Bisnis",
+			})
+		})
+		// --- [AKHIR BARU] ---
 	}
 
 	// --- Grup Rute untuk API v1 (Backend) ---
@@ -178,8 +202,8 @@ func setupRoutes(router *gin.Engine) {
 			protected.GET("/profile", handlers.GetProfile)
 
 			// Rute Pengaturan Profil (Tahap 11)
-			protected.PUT("/profile", handlers.UpdateProfile)   // Update data profil
-			protected.PUT("/password", handlers.UpdatePassword) // Update password
+			protected.PUT("/profile", handlers.UpdateProfile)
+			protected.PUT("/password", handlers.UpdatePassword)
 
 			// Rute Produk (Tahap 3)
 			protected.POST("/products", productHandler.CreateProduct)
@@ -195,20 +219,36 @@ func setupRoutes(router *gin.Engine) {
 			protected.PUT("/customers/:id", customerHandler.UpdateCustomer)
 			protected.DELETE("/customers/:id", customerHandler.DeleteCustomer)
 
+			// --- [BARU] Rute Kategori (Fitur #2) ---
+			protected.POST("/categories", categoryHandler.CreateCategory)
+			protected.GET("/categories", categoryHandler.GetUserCategories)
+			protected.PUT("/categories/:id", categoryHandler.UpdateCategory)
+			protected.DELETE("/categories/:id", categoryHandler.DeleteCategory)
+			// --- [AKHIR BARU] ---
+
 			// Rute Transaksi (Tahap 4)
 			protected.POST("/transactions", transactionHandler.CreateTransaction)
 			protected.GET("/transactions", transactionHandler.GetUserTransactions)
 			protected.GET("/transactions/:id", transactionHandler.GetTransactionByID)
+			// --- [BARU] Rute untuk menandai lunas ---
+			protected.PUT("/transactions/:id/mark-paid", transactionHandler.MarkTransactionPaid)
+			// --- [AKHIR BARU] ---
 
 			// Rute Dashboard (Tahap 5 & Fitur #2)
 			protected.GET("/dashboard/stats", dashboardHandler.GetDashboardStats)
 			protected.GET("/dashboard/chart", dashboardHandler.GetDashboardChartData)
+			// --- [BARU UNTUK FITUR STOK MINIMUM] ---
+			protected.GET("/dashboard/low-stock", dashboardHandler.GetLowStockProducts)
+			// --- [AKHIR BARU] ---
 
 			// [BARU] Rute Laporan (Fitur #4)
 			protected.GET("/reports/product-performance", reportHandler.GetProductPerformance)
 
 			// --- [BARU] Rute untuk Laporan Buku Besar ---
 			protected.GET("/reports/general-ledger", reportHandler.GetGeneralLedger)
+
+			// --- [BARU] Rute untuk Laporan Utang/Piutang ---
+			protected.GET("/reports/unpaid", reportHandler.GetUnpaidReport)
 		}
 	}
 }

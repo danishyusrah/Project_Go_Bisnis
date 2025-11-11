@@ -65,6 +65,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 selling_price: parseFloat(formData.get("selling_price")) || 0,
                 purchase_price: parseFloat(formData.get("purchase_price")) || 0,
                 stock: parseInt(formData.get("stock"), 10) || 0,
+                // --- [BARU] ---
+                batas_stok_minimum: parseInt(formData.get("batas_stok_minimum"), 10) || 0,
+                // --- [AKHIR BARU] ---
             };
 
             // Validasi frontend sederhana

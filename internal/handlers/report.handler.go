@@ -105,3 +105,24 @@ func (h *ReportHandler) GetGeneralLedger(c *gin.Context) {
 	// 4. Kembalikan laporan lengkap sebagai JSON
 	c.JSON(http.StatusOK, report)
 }
+
+// --- [BARU] FUNGSI UNTUK LAPORAN UTANG/PIUTANG ---
+
+// GetUnpaidReport menangani permintaan API untuk laporan utang & piutang
+func (h *ReportHandler) GetUnpaidReport(c *gin.Context) {
+	// 1. Ambil UserID dari context
+	userID, ok := getUserIDFromContext(c)
+	if !ok {
+		return
+	}
+
+	// 2. Panggil service (Tidak perlu filter tanggal, kita ingin lihat semua yang belum lunas)
+	report, err := h.Service.GetUnpaidReport(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data laporan utang/piutang"})
+		return
+	}
+
+	// 3. Kembalikan laporan lengkap sebagai JSON
+	c.JSON(http.StatusOK, report)
+}

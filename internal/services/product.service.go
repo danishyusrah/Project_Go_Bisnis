@@ -31,6 +31,9 @@ func (s *ProductService) CreateProduct(input dto.CreateProductInput, userID uint
 		SellingPrice:  input.SellingPrice,
 		Stock:         input.Stock,
 		UserID:        userID, // Menetapkan pemilik produk
+		// --- [BARU] ---
+		BatasStokMinimum: input.BatasStokMinimum,
+		// --- [AKHIR BARU] ---
 	}
 
 	if err := db.Create(&newProduct).Error; err != nil {
@@ -102,6 +105,9 @@ func (s *ProductService) UpdateProduct(productID uint, input dto.UpdateProductIn
 	product.PurchasePrice = input.PurchasePrice
 	product.SellingPrice = input.SellingPrice
 	product.Stock = input.Stock
+	// --- [BARU] ---
+	product.BatasStokMinimum = input.BatasStokMinimum
+	// --- [AKHIR BARU] ---
 
 	if err := db.Save(&product).Error; err != nil {
 		return models.Product{}, err

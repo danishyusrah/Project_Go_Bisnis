@@ -16,6 +16,10 @@ type Product struct {
 	SellingPrice float64 `gorm:"type:decimal(20,2)"` // Harga Jual
 	Stock        int     `gorm:"default:0"`
 
+	// --- [BARU UNTUK FITUR STOK MINIMUM] ---
+	BatasStokMinimum int `gorm:"default:0"` // Batas stok untuk peringatan
+	// --- [AKHIR BARU] ---
+
 	// Relasi: Setiap produk dimiliki oleh satu User
 	UserID uint `gorm:"not null"` // Foreign Key ke tabel users
 	User   User // GORM akan otomatis mengelola relasi ini

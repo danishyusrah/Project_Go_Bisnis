@@ -46,7 +46,6 @@
             <!-- Tipe Transaksi (Toggle) -->
             <div class="bg-white p-4 rounded-xl card-shadow">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Tipe Transaksi</label>
-                <!-- [DIUBAH] Menjadi 3 Opsi -->
                 <div class="flex rounded-lg border border-gray-200">
                     <input type="radio" id="type_income" name="type" value="INCOME" class="hidden" checked>
                     <label for="type_income" class="flex-1 text-center py-2 px-4 rounded-l-lg cursor-pointer transition-colors duration-200">
@@ -58,7 +57,6 @@
                         Pengeluaran
                     </label>
 
-                    <!-- [BARU] Opsi Modal -->
                     <input type="radio" id="type_capital" name="type" value="CAPITAL" class="hidden">
                     <label for="type_capital" class="flex-1 text-center py-2 px-4 rounded-r-lg cursor-pointer transition-colors duration-200">
                         Modal
@@ -70,7 +68,7 @@
             <div class="bg-white p-4 rounded-xl card-shadow space-y-4">
                 <h2 class="text-lg font-semibold text-gray-900">Detail</h2>
                 
-                <!-- [DIUBAH] Grup Pelanggan (agar bisa disembunyikan) -->
+                <!-- Grup Pelanggan (agar bisa disembunyikan) -->
                 <div id="customer-group">
                     <div class="flex justify-between items-center">
                         <label id="customerLabel" for="customer_id" class="block text-sm font-medium text-gray-700">Pelanggan/Supplier</label>
@@ -85,7 +83,36 @@
                     </select>
                 </div>
 
-                <!-- [BARU] Grup Jumlah Modal (disembunyikan by default) -->
+                <!-- --- [BARU UNTUK FITUR KATEGORI] --- -->
+                <!-- Grup ini akan disembunyikan/ditampilkan oleh JS -->
+                <div id="category-group">
+                    <label for="category_id" class="block text-sm font-medium text-gray-700">Kategori</label>
+                    <select id="category_id" name="category_id"
+                        class="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="">-- Pilih Kategori --</option>
+                        <!-- Daftar kategori akan dimuat oleh JavaScript -->
+                    </select>
+                </div>
+                <!-- --- [AKHIR BARU] --- -->
+
+                <!-- Grup Status Pembayaran (disembunyikan by default) -->
+                <div id="payment-status-group">
+                    <label for="payment_status" class="block text-sm font-medium text-gray-700">Status Pembayaran</label>
+                    <select id="payment_status" name="payment_status"
+                        class="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="LUNAS">Lunas (Tunai)</option>
+                        <option value="BELUM LUNAS">Belum Lunas (Utang/Piutang)</option>
+                    </select>
+                </div>
+
+                <!-- Grup Tanggal Jatuh Tempo (disembunyikan by default) -->
+                <div id="due-date-group" class="hidden">
+                    <label for="due_date" class="block text-sm font-medium text-gray-700">Tgl Jatuh Tempo (Opsional)</label>
+                    <input type="date" id="due_date" name="due_date"
+                        class="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+
+                <!-- Grup Jumlah Modal (disembunyikan by default) -->
                 <div id="capital-amount-group" class="hidden">
                     <label for="capital_amount" class="block text-sm font-medium text-gray-700">Jumlah Modal</label>
                     <input type="number" id="capital_amount" name="capital_amount" min="0" value="0"
@@ -102,7 +129,7 @@
                 </div>
             </div>
 
-            <!-- [DIUBAH] Daftar Item (agar bisa disembunyikan) -->
+            <!-- Daftar Item (agar bisa disembunyikan) -->
             <div id="item-section" class="bg-white p-4 rounded-xl card-shadow space-y-4">
                 <div class="flex justify-between items-center">
                     <h2 class="text-lg font-semibold text-gray-900">Item Transaksi</h2>
@@ -146,7 +173,7 @@
                     Error: Gagal menyimpan.
                 </div>
 
-                <!-- [DIUBAH] Grup Total (agar bisa disembunyikan) -->
+                <!-- Grup Total (agar bisa disembunyikan) -->
                 <div id="item-total-group" class="flex justify-between items-center mb-3">
                     <span class="text-lg font-medium text-gray-600">Total:</span>
                     <span id="totalAmount" class="text-2xl font-bold text-gray-900">Rp 0</span>
@@ -161,10 +188,6 @@
 
     </div>
 
-    <!-- 
-        JavaScript kustom untuk halaman ini.
-        Akan di-update di file selanjutnya.
-    -->
     <script src="/static/add-transaction.js"></script>
 
 </body>

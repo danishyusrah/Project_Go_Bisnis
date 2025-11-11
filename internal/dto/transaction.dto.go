@@ -1,6 +1,8 @@
 package dto
 
-import "github.com/danishyusrah/go_bisnis/internal/models"
+import (
+	"github.com/danishyusrah/go_bisnis/internal/models"
+)
 
 // CreateTransactionItemInput adalah DTO untuk satu item dalam transaksi
 type CreateTransactionItemInput struct {
@@ -21,6 +23,16 @@ type CreateTransactionInput struct {
 	// [BARU] TotalAmount adalah untuk transaksi non-item (seperti Modal)
 	// Ini juga opsional, dan hanya akan digunakan jika tipenya 'CAPITAL'
 	TotalAmount float64 `json:"total_amount" binding:"omitempty,gte=0"`
+
+	// [BARU UNTUK FITUR UTANG/PIUTANG]
+	// Kita gunakan 'omitempty' agar jika tidak dikirim, nilai default (LUNAS) akan dipakai
+	PaymentStatus models.PaymentStatusType `json:"payment_status" binding:"omitempty,oneof=LUNAS 'BELUM LUNAS' ''"`
+	// Kita terima sebagai string pointer, format YYYY-MM-DD
+	DueDate *string `json:"due_date" binding:"omitempty,datetime=2006-01-02"`
+
+	// --- [BARU UNTUK FITUR KATEGORI] ---
+	CategoryID *uint `json:"category_id"` // Opsional, hanya untuk Pemasukan/Pengeluaran
+	// --- [AKHIR BARU] ---
 }
 
 // TransactionItemResponse adalah DTO untuk detail item dalam respons
@@ -44,4 +56,13 @@ type TransactionResponse struct {
 	// Informasi pelanggan yang terstruktur
 	CustomerID   *uint  `json:"customer_id"`
 	CustomerName string `json:"customer_name"` // Kita akan isi nama pelanggan di sini
+
+	// [BARU UNTUK FITUR UTANG/PIUTANG]
+	PaymentStatus models.PaymentStatusType `json:"payment_status"`
+	DueDate       *string                  `json:"due_date"` // Akan dikirim sebagai string "YYYY-MM-DD" atau null
+
+	// --- [BARU UNTUK FITUR KATEGORI] ---
+	CategoryID   *uint  `json:"category_id"`
+	CategoryName string `json:"category_name"` // Kita akan isi nama kategori di sini
+	// --- [AKHIR BARU] ---
 }

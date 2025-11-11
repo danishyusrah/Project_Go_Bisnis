@@ -3,7 +3,7 @@ package services
 import (
 	"fmt" // [BARU] Impor fmt untuk format deskripsi
 	"log"
-	"time"
+	"time" // [BARU] Impor time
 
 	"github.com/danishyusrah/go_bisnis/internal/database"
 	"github.com/danishyusrah/go_bisnis/internal/dto"
@@ -143,6 +143,110 @@ func (s *ReportService) GetGeneralLedgerReport(userID uint, startTime time.Time,
 	report.TotalDebit = totalDebit
 	report.TotalCredit = totalCredit
 	report.EndingBalance = runningBalance // Saldo akhir adalah saldo berjalan terakhir
+
+	return report, nil
+}
+
+// --- [BARU] FUNGSI UNTUK LAPORAN UTANG & PIUTANG ---
+
+// GetUnpaidReport membuat laporan transaksi yang belum lunas
+func (s *ReportService) GetUnpaidReport(userID uint) (dto.UnpaidReport, error) {
+	db := database.DB
+	var report dto.UnpaidReport
+	report.Receivables = []dto.UnpaidTransactionItem{}
+	report.Payables = []dto.UnpaidTransactionItem{}
+
+	now := time.Now()
+	// Tentukan awal hari ini untuk perbandingan "IsOverdue"
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+
+	// 1. Ambil Piutang (Receivables)
+	var unpaidIncomes []models.Transaction
+	err := db.Preload("Customer").Preload("Items").
+		Where("user_id = ? AND type = ? AND payment_status = ?", userID, models.Income, models.BelumLunas).
+		Order("created_at asc").Find(&unpaidIncomes).Error
+	if err != nil {
+		log.Printf("Error fetching unpaid incomes: %v", err)
+		return report, err
+	}
+
+	// 2. Proses Piutang
+	for _, tx := range unpaidIncomes {
+		report.TotalReceivable += tx.TotalAmount
+
+		customerName := "Umum"
+		if tx.Customer != nil {
+			customerName = tx.Customer.Name
+		}
+
+		primaryItem := "Penjualan"
+		if len(tx.Items) > 0 {
+			primaryItem = tx.Items[0].ProductName
+		}
+
+		var dueDateStr *string
+		isOverdue := false
+		if tx.DueDate != nil {
+			formatted := tx.DueDate.Format("2006-01-02")
+			dueDateStr = &formatted
+			isOverdue = tx.DueDate.Before(today) // Cek apakah sudah lewat hari ini
+		}
+
+		item := dto.UnpaidTransactionItem{
+			TransactionID: tx.ID,
+			CustomerName:  customerName,
+			Amount:        tx.TotalAmount,
+			CreatedAt:     tx.CreatedAt.Format("02 Jan 2006"),
+			DueDate:       dueDateStr,
+			IsOverdue:     isOverdue,
+			PrimaryItem:   primaryItem,
+		}
+		report.Receivables = append(report.Receivables, item)
+	}
+
+	// 3. Ambil Utang (Payables)
+	var unpaidExpenses []models.Transaction
+	err = db.Preload("Customer").Preload("Items").
+		Where("user_id = ? AND type = ? AND payment_status = ?", userID, models.Expense, models.BelumLunas).
+		Order("created_at asc").Find(&unpaidExpenses).Error
+	if err != nil {
+		log.Printf("Error fetching unpaid expenses: %v", err)
+		return report, err
+	}
+
+	// 4. Proses Utang
+	for _, tx := range unpaidExpenses {
+		report.TotalPayable += tx.TotalAmount
+
+		customerName := "Umum" // Di sini berarti "Supplier"
+		if tx.Customer != nil {
+			customerName = tx.Customer.Name
+		}
+
+		primaryItem := "Biaya Operasional"
+		if len(tx.Items) > 0 {
+			primaryItem = tx.Items[0].ProductName
+		}
+
+		var dueDateStr *string
+		isOverdue := false
+		if tx.DueDate != nil {
+			formatted := tx.DueDate.Format("2006-01-02")
+			dueDateStr = &formatted
+			isOverdue = tx.DueDate.Before(today)
+		}
+
+		item := dto.UnpaidTransactionItem{
+			TransactionID: tx.ID,
+			CustomerName:  customerName,
+			Amount:        tx.TotalAmount,
+			CreatedAt:     tx.CreatedAt.Format("02 Jan 2006"),
+			DueDate:       dueDateStr,
+			IsOverdue:     isOverdue,
+			PrimaryItem:   primaryItem,
+		}
+		report.Payables = append(report.Payables, item)
+	}
 
 	return report, nil
 }

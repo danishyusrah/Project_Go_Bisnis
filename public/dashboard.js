@@ -49,6 +49,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const dashboardContentEl = document.getElementById("dashboard-content");
     const pdfLoadingOverlay = document.getElementById("pdfLoadingOverlay");
 
+    // --- [BARU UNTUK FITUR STOK MINIMUM] ---
+    const lowStockAlertSection = document.getElementById("low-stock-alert-section");
+    const lowStockListEl = document.getElementById("low-stock-list");
+    // --- [AKHIR BARU] ---
+
+
     // --- 2. Fungsi Helper (Sangat Profesional) ---
 
     /**
@@ -207,7 +213,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    // Fungsi untuk memuat transaksi terakhir (Tidak berubah)
+    // [DIUBAH] Fungsi untuk memuat transaksi terakhir
     const loadTransactions = async () => {
         try {
             const transactions = await fetchWithAuth("/api/v1/transactions"); // Ini selalu 5 terbaru
@@ -222,12 +228,24 @@ document.addEventListener("DOMContentLoaded", () => {
             // Batasi hanya 5 transaksi terbaru untuk dashboard
             transactions.slice(0, 5).forEach(tx => {
                 const isIncome = tx.type === "INCOME";
-                const iconBgClass = isIncome ? "bg-green-100" : "bg-red-100";
-                const iconClass = isIncome ? "text-green-600" : "text-red-600";
-                const amountClass = isIncome ? "text-green-600" : "text-red-600";
-                const sign = isIncome ? "+" : "-";
+                // [DIUBAH] Sesuaikan ikon untuk tipe Modal
+                let iconBgClass = isIncome ? "bg-green-100" : "bg-red-100";
+                let iconClass = isIncome ? "text-green-600" : "text-red-600";
+                let iconSvg = isIncome ? 
+                    `<path d="M12 5v14"/> <path d="m17 14-5-5-5 5"/>` : 
+                    `<path d="M12 5v14"/> <path d="m17 10-5 5-5-5"/>`;
+
+                if (tx.type === "CAPITAL") {
+                    iconBgClass = "bg-blue-100";
+                    iconClass = "text-blue-600";
+                    // Ikon dompet
+                    iconSvg = `<path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/>`;
+                }
+
+                const amountClass = isIncome || tx.type === "CAPITAL" ? "text-green-600" : "text-red-600";
+                const sign = isIncome || tx.type === "CAPITAL" ? "+" : "-";
                 
-                const title = tx.items[0]?.product_name || "Transaksi";
+                const title = tx.items[0]?.product_name || (tx.type === "CAPITAL" ? "Setoran Modal" : "Transaksi");
                 const date = new Date(tx.created_at).toLocaleDateString("id-ID", {
                     day: "numeric",
                     month: "short"
@@ -235,20 +253,44 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const customerName = tx.customer_name || "Umum"; 
 
+                // --- [BARU] Logika untuk Status Pembayaran ---
+                let statusHtml = `<p class="text-xs text-gray-500 mt-0.5">${date} • ${customerName}</p>`; // Default
+
+                if (tx.payment_status === 'BELUM LUNAS') {
+                    let statusBadge = `<span class="text-xs font-medium text-red-600 bg-red-100 px-2 py-0.5 rounded-full">Belum Lunas</span>`;
+                    
+                    if (tx.due_date) {
+                        const dueDate = new Date(tx.due_date);
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0); // Set ke awal hari
+
+                        // Hanya tampilkan tanggal jika belum lewat
+                        if (dueDate >= today) {
+                             statusBadge += `<span class="text-xs font-medium text-yellow-700 bg-yellow-100 px-2 py-0.5 rounded-full ml-1.5">Jatuh Tempo: ${dueDate.toLocaleDateString("id-ID", { day: 'numeric', month: 'short' })}</span>`;
+                        } else {
+                            // Jika sudah lewat
+                            statusBadge = `<span class="text-xs font-medium text-red-700 bg-red-100 px-2 py-0.5 rounded-full">LEWAT JATUH TEMPO</span>`;
+                        }
+                    }
+                    
+                    // Ganti HTML default dengan HTML status
+                    // Tampilkan status di atas tanggal
+                    statusHtml = `<div class="mt-1 flex items-center flex-wrap gap-1">${statusBadge}</div>` + statusHtml; 
+                }
+                // --- [AKHIR BARU] ---
+
+
                 const txElement = document.createElement("div");
                 txElement.className = "flex items-center p-4 bg-white rounded-xl card-shadow";
                 txElement.innerHTML = `
                     <div class="p-2.5 ${iconBgClass} rounded-lg flex-shrink-0">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${iconClass}">
-                            ${isIncome ? 
-                                `<path d="M12 5v14"/> <path d="m17 14-5-5-5 5"/>` : 
-                                `<path d="M12 5v14"/> <path d="m17 10-5 5-5-5"/>`
-                            }
+                            ${iconSvg}
                         </svg>
                     </div>
-                    <div class="flex-1 ml-4">
+                    <div class="flex-1 ml-4 min-w-0"> <!-- [DIUBAH] Ditambahkan min-w-0 -->
                         <p class="text-base font-medium text-gray-900 truncate">${title}</p>
-                        <p class="text-xs text-gray-500 mt-0.5">${date} • ${customerName}</p>
+                        ${statusHtml} <!-- [DIUBAH] Menggunakan HTML dinamis -->
                     </div>
                     <span class="text-base font-semibold ${amountClass} flex-shrink-0 ml-2">
                         ${sign} ${formatCurrency(tx.total_amount)}
@@ -361,7 +403,60 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    // --- 5. Fungsi Ekspor PDF ---
+
+    // --- [BARU UNTUK FITUR STOK MINIMUM] ---
+    /**
+     * Memuat daftar produk yang stoknya menipis
+     */
+    const loadLowStockAlerts = async () => {
+        try {
+            const products = await fetchWithAuth("/api/v1/dashboard/low-stock");
+            
+            // Jika tidak ada produk, sembunyikan seluruh bagian
+            if (!products || products.length === 0) {
+                lowStockAlertSection.classList.add("hidden");
+                return;
+            }
+
+            // Jika ada, tampilkan bagian dan bersihkan skeleton
+            lowStockAlertSection.classList.remove("hidden");
+            lowStockListEl.innerHTML = ""; // Hapus skeleton
+
+            products.forEach(product => {
+                const alertElement = document.createElement("a");
+                alertElement.className = "flex items-center justify-between p-4 bg-white rounded-xl card-shadow hover:bg-gray-50 transition-colors cursor-pointer";
+                // Tautkan ke halaman edit produk
+                alertElement.href = `/edit-product.html?id=${product.product_id}`; 
+
+                alertElement.innerHTML = `
+                    <div class="flex items-center min-w-0">
+                        <div class="p-2.5 bg-yellow-100 rounded-lg flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-triangle text-yellow-600">
+                                <path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>
+                            </svg>
+                        </div>
+                        <div class="flex-1 ml-4 min-w-0">
+                            <p class="text-base font-medium text-gray-900 truncate">${product.name}</p>
+                            <p class="text-xs text-gray-500 mt-0.5">Sisa: ${product.stock} (Batas: ${product.batas_stok_minimum})</p>
+                        </div>
+                    </div>
+                    <span class="text-sm font-semibold text-gray-700 flex-shrink-0 ml-2">
+                        Restock
+                    </span>
+                `;
+                lowStockListEl.appendChild(alertElement);
+            });
+
+        } catch (error) {
+            console.error("Error loading low stock alerts:", error);
+            // Sembunyikan jika error
+            lowStockAlertSection.classList.add("hidden");
+        }
+    };
+    // --- [AKHIR BARU] ---
+
+
+    // --- 6. Fungsi Ekspor PDF ---
 
     /**
      * Membuat dan mengunduh PDF dari konten dashboard
@@ -437,7 +532,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    // --- 6. Event Listeners ---
+    // --- 7. Event Listeners ---
 
     // Fungsi untuk me-refresh semua data
     const refreshAllData = () => {
@@ -459,9 +554,12 @@ document.addEventListener("DOMContentLoaded", () => {
     // Event listener untuk tombol download PDF
     downloadPdfButton.addEventListener("click", exportToPDF);
 
-    // --- 7. Jalankan Semua Fungsi Load Awal ---
+    // --- 8. Jalankan Semua Fungsi Load Awal ---
     loadProfile();
     loadTransactions(); // Muat transaksi terakhir (tidak tergantung filter)
+    // --- [BARU] ---
+    loadLowStockAlerts(); // Muat peringatan stok (tidak tergantung filter)
+    // --- [AKHIR BARU] ---
     populateYearFilter(); // <-- Panggil fungsi baru
     setDefaultFilters();  // <-- Panggil fungsi baru
     refreshAllData();     // <-- Panggil ini TERAKHIR untuk memuat data bulan ini

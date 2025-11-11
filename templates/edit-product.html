@@ -35,7 +35,7 @@
         <header class="flex justify-between items-center p-5 bg-white card-shadow sticky top-0 z-10">
             <!-- Tombol Kembali ke Halaman Produk -->
             <a href="/products.html" class="p-2 rounded-full text-gray-600 hover:bg-gray-100">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
             </a>
             <h1 class="text-xl font-bold text-gray-900">Edit Produk</h1>
             <div class="w-10"></div> <!-- Placeholder untuk menyeimbangkan header -->
@@ -93,6 +93,15 @@
                         <input type="number" id="purchase_price" name="purchase_price" min="0"
                             class="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                     </div>
+
+                    <!-- --- [BARU] --- -->
+                    <div>
+                        <label for="batas_stok_minimum" class="block text-sm font-medium text-gray-700">Batas Stok Minimum (Opsional)</label>
+                        <input type="number" id="batas_stok_minimum" name="batas_stok_minimum" min="0" value="0"
+                            class="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        <p class="text-xs text-gray-500 mt-1">Anda akan dapat peringatan jika stok di bawah angka ini.</p>
+                    </div>
+                    <!-- --- [AKHIR BARU] --- -->
                     
                     <div>
                         <label for="description" class="block text-sm font-medium text-gray-700">Deskripsi (Opsional)</label>

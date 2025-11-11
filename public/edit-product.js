@@ -81,6 +81,10 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("stock").value = product.stock;
             document.getElementById("purchase_price").value = product.purchase_price;
             document.getElementById("description").value = product.description;
+            // --- [BARU] ---
+            // Isi nilai batas stok minimum yang sudah tersimpan
+            document.getElementById("batas_stok_minimum").value = product.batas_stok_minimum || 0;
+            // --- [AKHIR BARU] ---
 
             // Sembunyikan loading
             loadingOverlay.classList.add("hidden");
@@ -114,6 +118,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 selling_price: parseFloat(formData.get("selling_price")) || 0,
                 purchase_price: parseFloat(formData.get("purchase_price")) || 0,
                 stock: parseInt(formData.get("stock"), 10) || 0,
+                // --- [BARU] ---
+                // Kirim nilai baru batas stok minimum
+                batas_stok_minimum: parseInt(formData.get("batas_stok_minimum"), 10) || 0,
+                // --- [AKHIR BARU] ---
             };
 
             if (!payload.name || payload.selling_price < 0 || payload.stock < 0) {

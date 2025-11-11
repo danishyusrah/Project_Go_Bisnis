@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laporan Utang & Piutang - Go Bisnis</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f0f2f5;
+        }
+        .card-shadow { box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03); }
+        
+        .skeleton {
+            background-color: #e0e0e0;
+            border-radius: 0.25rem;
+            animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
+        /* Style untuk Sidebar Desktop */
+        #desktop-sidebar::-webkit-scrollbar { display: none; }
+        #desktop-sidebar { -ms-overflow-style: none; scrollbar-width: none; }
+        .sidebar-link-active {
+            background-color: #4f46e5; /* indigo-600 */
+            color: #ffffff; /* white */
+        }
+        .sidebar-link-active svg {
+            color: #ffffff; /* white */
+        }
+
+        /* [BARU] Styling untuk Toast */
+        #toast-notification {
+            transition: transform 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="lg:flex">
+
+    <!-- NAVIGASI SIDEBAR DESKTOP -->
+    <nav id="desktop-sidebar" class="hidden lg:flex lg:flex-col lg:w-64 lg:flex-shrink-0 lg:overflow-y-auto bg-white border-r border-gray-200 card-shadow">
+        <div class="flex flex-col flex-grow p-4">
+            <!-- Logo -->
+            <div class="flex items-center justify-center h-16 flex-shrink-0 px-4">
+                <h1 class="text-2xl font-bold text-indigo-600">Go Bisnis</h1>
+            </div>
+            
+            <!-- Menu Navigasi -->
+            <div class="flex-grow mt-5">
+                <nav class="flex-1 space-y-2">
+                    <a href="/dashboard.html" class="flex items-center px-4 py-3 rounded-lg text-gray-600 hover:bg-indigo-500 hover:text-white transition-colors duration-200 group">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-home mr-3 text-gray-400 group-hover:text-white"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                        <span class="font-medium">Home</span>
+                    </a>
+                     <a href="/pos.html" class="flex items-center px-4 py-3 rounded-lg text-gray-600 hover:bg-indigo-500 hover:text-white transition-colors duration-200 group">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-cart mr-3 text-gray-400 group-hover:text-white"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+                        <span class="font-medium">Kasir</span>
+                    </a>
+                    <a href="/reports.html" class="sidebar-link-active flex items-center px-4 py-3 rounded-lg text-gray-700 hover:bg-indigo-500 hover:text-white transition-colors duration-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bar-chart-3 mr-3"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+                        <span class="font-medium">Laporan</span>
+                    </a>
+                    <a href="/products.html" class="flex items-center px-4 py-3 rounded-lg text-gray-600 hover:bg-indigo-500 hover:text-white transition-colors duration-200 group">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-package mr-3 text-gray-400 group-hover:text-white"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                        <span class="font-medium">Produk</span>
+                    </a>
+                    <a href="/settings.html" class="flex items-center px-4 py-3 rounded-lg text-gray-600 hover:bg-indigo-500 hover:text-white transition-colors duration-200 group">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings mr-3 text-gray-400 group-hover:text-white"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 0-2 0l-.15-.08a2 2 0 0 0-2.73 2.73l.09.15a2 2 0 0 0 0 2l-.25.43a2 2 0 0 0-1.73 1H2a2 2 0 0 0-2 2v.44a2 2 0 0 0 2 2h.18a2 2 0 0 1 1.73 1l.25.43a2 2 0 0 0 0 2l-.08.15a2 2 0 0 0 2.73 2.73l.15-.08a2 2 0 0 0 2 0l.43-.25a2 2 0 0 1 1.73 1v.18a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 0 2 0l.15.08a2 2 0 0 0 2.73-2.73l-.09-.15a2 2 0 0 0 0 2l.25-.43a2 2 0 0 0 1.73-1H22a2 2 0 0 0 2-2v-.44a2 2 0 0 0-2-2h-.18a2 2 0 0 1-1.73-1l-.25-.43a2 2 0 0 0 0-2l.08-.15a2 2 0 0 0-2.73-2.73l-.15.08a2 2 0 0 0-2 0l-.43.25a2 2 0 0 1-1.73-1V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <span class="font-medium">Pengaturan</span>
+                    </a>
+                </nav>
+            </div>
+            <!-- Tombol CTA Sidebar -->
+            <div class="mt-auto mb-4">
+                <a href="/add-transaction.html" class="flex items-center justify-center bg-indigo-600 text-white w-full py-3 px-4 rounded-lg shadow-lg hover:bg-indigo-700 transition-colors duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus mr-2"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                    <span class="font-medium">Transaksi Baru</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+    <!-- AKHIR SIDEBAR DESKTOP -->
+
+
+    <!-- KONTAINER KONTEN UTAMA -->
+    <div class="max-w-md mx-auto bg-gray-100 min-h-screen lg:flex-1 lg:max-w-none lg:mx-0">
+        
+        <!-- 1. Header Halaman -->
+        <header class="flex justify-between items-center p-5 bg-white card-shadow sticky top-0 z-10">
+            <!-- Tombol Kembali ke Halaman Laporan -->
+            <a href="/reports.html" class="p-2 rounded-full text-gray-600 hover:bg-gray-100">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+            </a>
+            <h1 class="text-xl font-bold text-gray-900">Utang & Piutang</h1>
+            <div class="w-10"></div> <!-- Placeholder -->
+        </header>
+
+        <!-- 2. Konten Utama (Ringkasan & Daftar) -->
+        <main class="p-5 pb-24 lg:p-8 space-y-6">
+            
+            <!-- Ringkasan Total -->
+            <section id="summary-section" class="grid grid-cols-2 gap-4">
+                <!-- Skeleton Loader -->
+                <div id="summary-skeleton" class="col-span-2 grid grid-cols-2 gap-4">
+                    <div class="bg-white p-4 rounded-xl card-shadow space-y-2">
+                        <div class="skeleton h-4 w-1/2"></div>
+                        <div class="skeleton h-7 w-3/4"></div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl card-shadow space-y-2">
+                        <div class="skeleton h-4 w-1/2"></div>
+                        <div class="skeleton h-7 w-3/4"></div>
+                    </div>
+                </div>
+
+                <!-- Konten Asli (hidden by default) -->
+                <!-- Total Piutang (Uang yang akan Anda terima) -->
+                <div id="receivable-card" class="bg-white p-4 rounded-xl card-shadow hidden">
+                    <span class="text-sm font-medium text-green-600">Total Piutang</span>
+                    <p id="totalReceivable" class="text-2xl font-bold text-gray-900 mt-1">Rp 0</p>
+                </div>
+                <!-- Total Utang (Uang yang harus Anda bayar) -->
+                <div id="payable-card" class="bg-white p-4 rounded-xl card-shadow hidden">
+                    <span class="text-sm font-medium text-red-600">Total Utang</span>
+                    <p id="totalPayable" class="text-2xl font-bold text-gray-900 mt-1">Rp 0</p>
+                </div>
+            </section>
+
+            <!-- Daftar Piutang (Pelanggan Belum Bayar) -->
+            <section>
+                <h2 class="text-lg font-semibold text-gray-900 mb-3">Daftar Piutang (Pelanggan Belum Bayar)</h2>
+                <div id="receivables-list" class="space-y-3">
+                    <!-- Skeleton Loader untuk Daftar -->
+                    <div class="p-4 bg-white rounded-xl card-shadow space-y-2">
+                        <div class="flex justify-between"><div class="skeleton h-5 w-1/2"></div><div class="skeleton h-5 w-1/3"></div></div>
+                        <div class="flex justify-between"><div class="skeleton h-4 w-1/3"></div><div class="skeleton h-4 w-1/4"></div></div>
+                    </div>
+                    <!-- Pesan "Tidak Ada" akan di-handle JS -->
+                </div>
+            </section>
+            
+            <!-- Daftar Utang (Anda Belum Bayar) -->
+            <section>
+                <h2 class="text-lg font-semibold text-gray-900 mb-3">Daftar Utang (Anda Belum Bayar)</h2>
+                <div id="payables-list" class="space-y-3">
+                    <!-- Skeleton Loader untuk Daftar -->
+                    <div class="p-4 bg-white rounded-xl card-shadow space-y-2">
+                        <div class="flex justify-between"><div class="skeleton h-5 w-1/2"></div><div class="skeleton h-5 w-1/3"></div></div>
+                        <div class="flex justify-between"><div class="skeleton h-4 w-1/3"></div><div class="skeleton h-4 w-1/4"></div></div>
+                    </div>
+                    <!-- Pesan "Tidak Ada" akan di-handle JS -->
+                </div>
+            </section>
+
+        </main>
+    </div> <!-- AKHIR KONTAINER KONTEN UTAMA -->
+
+
+    <!-- --- [BARU] Toast Notifikasi --- -->
+    <div id="toast-notification" 
+         class="hidden fixed bottom-5 right-5 z-50 px-4 py-3 rounded-lg shadow-lg transition-transform transform translate-y-20">
+        <span id="toast-message"></span>
+    </div>
+    <!-- --- [AKHIR BARU] --- -->
+
+    <!-- JavaScript kustom untuk halaman ini (akan kita buat selanjutnya) -->
+    <script src="/static/unpaid-report.js"></script>
+
+</body>
+</html>

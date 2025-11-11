@@ -27,6 +27,7 @@ func NewDashboardHandler() *DashboardHandler {
 
 // parseDateRange mengambil 'from' dan 'to' dari query, atau default ke 'Bulan Ini'
 func parseDateRange(c *gin.Context) (time.Time, time.Time) {
+	// ... existing code ...
 	// Ambil 'from' dan 'to' dari query string
 	fromStr := c.Query("from")
 	toStr := c.Query("to")
@@ -66,6 +67,7 @@ func parseDateRange(c *gin.Context) (time.Time, time.Time) {
 
 // GetDashboardStats menangani permintaan statistik dashboard
 func (h *DashboardHandler) GetDashboardStats(c *gin.Context) {
+	// ... existing code ...
 	// Ambil userID dari context (yang di-set oleh middleware)
 	userID, ok := getUserIDFromContext(c) // Kita gunakan helper yang sama dari product.handler.go
 	if !ok {
@@ -92,6 +94,7 @@ func (h *DashboardHandler) GetDashboardStats(c *gin.Context) {
 
 // GetDashboardChartData menangani permintaan data untuk grafik
 func (h *DashboardHandler) GetDashboardChartData(c *gin.Context) {
+	// ... existing code ...
 	// 1. Ambil UserID
 	userID, ok := getUserIDFromContext(c)
 	if !ok {
@@ -111,3 +114,26 @@ func (h *DashboardHandler) GetDashboardChartData(c *gin.Context) {
 	// 4. Kirim data sebagai respons
 	c.JSON(http.StatusOK, chartData)
 }
+
+// --- [BARU UNTUK FITUR STOK MINIMUM] ---
+
+// GetLowStockProducts menangani permintaan untuk produk yang stoknya menipis
+func (h *DashboardHandler) GetLowStockProducts(c *gin.Context) {
+	// 1. Ambil UserID
+	userID, ok := getUserIDFromContext(c)
+	if !ok {
+		return
+	}
+
+	// 2. Panggil service baru kita
+	lowStockProducts, err := h.Service.GetLowStockProducts(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data stok menipis"})
+		return
+	}
+
+	// 3. Kirim data sebagai respons
+	c.JSON(http.StatusOK, lowStockProducts)
+}
+
+// --- [AKHIR BARU] ---

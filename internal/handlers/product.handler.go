@@ -50,11 +50,15 @@ func toProductResponse(product models.Product) dto.ProductResponse {
 		Stock:         product.Stock,
 		CreatedAt:     product.CreatedAt.String(),
 		UpdatedAt:     product.UpdatedAt.String(),
+		// --- [BARU] ---
+		BatasStokMinimum: product.BatasStokMinimum,
+		// --- [AKHIR BARU] ---
 	}
 }
 
 // CreateProduct menangani pembuatan produk baru
 func (h *ProductHandler) CreateProduct(c *gin.Context) {
+	// ... existing code ...
 	var input dto.CreateProductInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -77,6 +81,7 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 
 // GetUserProducts menangani pengambilan semua produk milik user
 func (h *ProductHandler) GetUserProducts(c *gin.Context) {
+	// ... existing code ...
 	userID, ok := getUserIDFromContext(c)
 	if !ok {
 		return
@@ -104,6 +109,7 @@ func (h *ProductHandler) GetUserProducts(c *gin.Context) {
 
 // GetProductByID menangani pengambilan satu produk
 func (h *ProductHandler) GetProductByID(c *gin.Context) {
+	// ... existing code ...
 	productID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ID produk tidak valid"})
@@ -134,6 +140,7 @@ func (h *ProductHandler) GetProductByID(c *gin.Context) {
 
 // UpdateProduct menangani pembaruan produk
 func (h *ProductHandler) UpdateProduct(c *gin.Context) {
+	// ... existing code ...
 	productID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ID produk tidak valid"})
@@ -171,6 +178,7 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 
 // DeleteProduct menangani penghapusan produk
 func (h *ProductHandler) DeleteProduct(c *gin.Context) {
+	// ... existing code ...
 	productID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ID produk tidak valid"})

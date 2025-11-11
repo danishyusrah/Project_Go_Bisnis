@@ -15,6 +15,14 @@ const (
 	Capital TransactionType = "CAPITAL" // [BARU] Setoran Modal / Penarikan Modal
 )
 
+// [BARU] PaymentStatusType mendefinisikan status pembayaran
+type PaymentStatusType string
+
+const (
+	Lunas      PaymentStatusType = "LUNAS"       // Transaksi sudah dibayar
+	BelumLunas PaymentStatusType = "BELUM LUNAS" // Transaksi belum dibayar (Utang/Piutang)
+)
+
 // Transaction adalah model untuk tabel 'transactions'
 type Transaction struct {
 	gorm.Model
@@ -27,9 +35,18 @@ type Transaction struct {
 	Notes       string
 	CreatedAt   time.Time `gorm:"index"` // [OPTIMASI 2] Tambahkan index pada CreatedAt
 
+	// [BARU] Status Pembayaran (Untuk Utang/Piutang)
+	PaymentStatus PaymentStatusType `gorm:"not null;default:'LUNAS';index"`
+	DueDate       *time.Time        `gorm:"null;index"` // Tanggal Jatuh Tempo (Opsional)
+
 	// [BARU] Relasi ke Customer (Nullable)
 	CustomerID *uint     `gorm:"index"`                 // Foreign key ke Customer (sudah di-index)
 	Customer   *Customer `gorm:"foreignKey:CustomerID"` // Relasi GORM (nullable)
+
+	// --- [BARU UNTUK FITUR KATEGORI] ---
+	CategoryID *uint     `gorm:"index"`                 // Foreign key ke Category (nullable, di-index)
+	Category   *Category `gorm:"foreignKey:CategoryID"` // Relasi GORM (nullable)
+	// --- [AKHIR BARU] ---
 
 	// Relasi: Sebuah Transaksi memiliki banyak Item
 	Items []TransactionItem `gorm:"foreignKey:TransactionID"`

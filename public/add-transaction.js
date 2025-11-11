@@ -15,6 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Variabel global untuk menyimpan daftar
     let userProducts = [];
     let userCustomers = [];
+    let userCategories = []; // <-- [BARU] Untuk Kategori
 
     // Ambil elemen-elemen form
     const transactionForm = document.getElementById("transactionForm");
@@ -22,22 +23,33 @@ document.addEventListener("DOMContentLoaded", () => {
     // [DIUBAH] Ambil semua elemen UI yang akan di-toggle
     const typeIncome = document.getElementById("type_income");
     const typeExpense = document.getElementById("type_expense");
-    const typeCapital = document.getElementById("type_capital"); // <-- BARU
+    const typeCapital = document.getElementById("type_capital"); 
 
-    const customerGroup = document.getElementById("customer-group"); // <-- BARU
+    const customerGroup = document.getElementById("customer-group");
     const customerLabel = document.getElementById("customerLabel");
     const customerSelectEl = document.getElementById("customer_id"); 
     
-    const capitalAmountGroup = document.getElementById("capital-amount-group"); // <-- BARU
-    const capitalAmountInput = document.getElementById("capital_amount"); // <-- BARU
+    const capitalAmountGroup = document.getElementById("capital-amount-group");
+    const capitalAmountInput = document.getElementById("capital_amount");
     
-    const notesGroup = document.getElementById("notes-group"); // <-- BARU
+    // --- [BARU] Ambil elemen Kategori ---
+    const categoryGroup = document.getElementById("category-group");
+    const categorySelectEl = document.getElementById("category_id");
+    // --- [AKHIR BARU] ---
 
-    const itemSection = document.getElementById("item-section"); // <-- BARU
+    // --- [BARU] Ambil elemen Utang/Piutang ---
+    const paymentStatusGroup = document.getElementById("payment-status-group");
+    const paymentStatusSelect = document.getElementById("payment_status");
+    const dueDateGroup = document.getElementById("due-date-group");
+    // --- [AKHIR BARU] ---
+
+    const notesGroup = document.getElementById("notes-group");
+
+    const itemSection = document.getElementById("item-section");
     const itemList = document.getElementById("item-list");
     const addItemButton = document.getElementById("add-item-button");
     
-    const itemTotalGroup = document.getElementById("item-total-group"); // <-- BARU
+    const itemTotalGroup = document.getElementById("item-total-group");
     const totalAmountEl = document.getElementById("totalAmount");
     
     const errorMessageEl = document.getElementById("errorMessage");
@@ -84,19 +96,17 @@ document.addEventListener("DOMContentLoaded", () => {
         return response.json();
     };
 
-    // --- 3. Logika Form Dinamis ---
+    // --- 3. Logika Memuat Data Awal (Loaders) ---
 
     /**
      * Memuat produk milik user dari API
      */
     const loadProducts = async () => {
         try {
-            userProducts = await fetchWithAuth("/api/v1/products");
-            // Isi dropdown di item pertama
-            updateProductDropdowns();
+            userProducts = (await fetchWithAuth("/api/v1/products")) || [];
+            // [DIHAPUS] updateProductDropdowns(); // Pindah ke initializePage
         } catch (error) {
             console.error("Gagal memuat produk:", error);
-            // Tetap lanjutkan, user masih bisa input manual
         }
     };
 
@@ -105,17 +115,26 @@ document.addEventListener("DOMContentLoaded", () => {
      */
     const loadCustomers = async () => {
         try {
-            const customers = (await fetchWithAuth("/api/v1/customers")) || [];
-            userCustomers = customers;
-            updateCustomerDropdown();
+            userCustomers = (await fetchWithAuth("/api/v1/customers")) || [];
+            // [DIHAPUS] updateCustomerDropdown(); // Pindah ke initializePage
         } catch (error) {
             console.error("Gagal memuat pelanggan:", error);
-            const option = document.createElement("option");
-            option.textContent = "Gagal memuat pelanggan";
-            option.disabled = true;
-            customerSelectEl.appendChild(option);
         }
     };
+
+    /**
+     * [BARU] Memuat kategori milik user dari API
+     */
+    const loadCategories = async () => {
+        try {
+            userCategories = (await fetchWithAuth("/api/v1/categories")) || [];
+        } catch (error) {
+            console.error("Gagal memuat kategori:", error);
+        }
+    };
+
+
+    // --- 4. Logika Form Dinamis (Renderers) ---
 
     /**
      * Mengisi <select> produk di semua baris item
@@ -152,7 +171,6 @@ document.addEventListener("DOMContentLoaded", () => {
         (userCustomers || []).forEach(customer => {
             const option = document.createElement("option");
             option.value = customer.id;
-            // Tampilkan nama dan telepon jika ada
             let customerText = customer.name;
             if (customer.phone) {
                 customerText += ` (${customer.phone})`;
@@ -164,6 +182,32 @@ document.addEventListener("DOMContentLoaded", () => {
         customerSelectEl.value = selectedValue;
     };
 
+    /**
+     * [BARU] Mengisi <select> kategori berdasarkan Tipe Transaksi
+     */
+    const updateCategoryDropdown = (transactionType) => {
+        if (!categorySelectEl) return;
+        
+        const selectedValue = categorySelectEl.value;
+        categorySelectEl.innerHTML = `<option value="">-- Pilih Kategori --</option>`;
+        
+        // Filter kategori yang sesuai (INCOME atau EXPENSE)
+        const filteredCategories = (userCategories || []).filter(cat => cat.type === transactionType);
+        
+        if (filteredCategories.length === 0) {
+             categorySelectEl.innerHTML = `<option value="" disabled>-- Buat Kategori di Pengaturan --</option>`;
+        }
+
+        filteredCategories.forEach(cat => {
+            const option = document.createElement("option");
+            option.value = cat.id;
+            option.textContent = cat.name;
+            categorySelectEl.appendChild(option);
+        });
+
+        categorySelectEl.value = selectedValue;
+    };
+
 
     /**
      * [DIUBAH TOTAL] Meng-update UI berdasarkan tipe transaksi (INCOME/EXPENSE/CAPITAL)
@@ -171,7 +215,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const updateFormForType = () => {
         const isIncome = typeIncome.checked;
         const isExpense = typeExpense.checked;
-        const isCapital = typeCapital.checked; // <-- BARU
+        const isCapital = typeCapital.checked;
 
         const notesLabel = notesGroup.querySelector("label");
 
@@ -180,6 +224,9 @@ document.addEventListener("DOMContentLoaded", () => {
             customerGroup.classList.add("hidden");
             itemSection.classList.add("hidden");
             itemTotalGroup.classList.add("hidden");
+            paymentStatusGroup.classList.add("hidden"); // [BARU]
+            dueDateGroup.classList.add("hidden");       // [BARU]
+            categoryGroup.classList.add("hidden");      // [BARU]
 
             capitalAmountGroup.classList.remove("hidden");
             notesLabel.textContent = "Catatan (Cth: Modal awal buka warung)";
@@ -190,11 +237,19 @@ document.addEventListener("DOMContentLoaded", () => {
             customerGroup.classList.remove("hidden");
             itemSection.classList.remove("hidden");
             itemTotalGroup.classList.remove("hidden");
+            paymentStatusGroup.classList.remove("hidden"); // [BARU]
+            categoryGroup.classList.remove("hidden");      // [BARU]
             
             capitalAmountGroup.classList.add("hidden");
             capitalAmountInput.value = 0; // Reset nilai modal
             
-            // Atur label pelanggan
+            // [BARU] Perbarui dropdown pelanggan & kategori berdasarkan data yang sudah di-load
+            updateCustomerDropdown(); 
+            updateCategoryDropdown(isIncome ? "INCOME" : "EXPENSE");
+
+            // [BARU] Tampilkan/sembunyikan Tgl Jatuh Tempo
+            handlePaymentStatusChange();
+            
             customerLabel.textContent = isIncome ? "Nama Pelanggan" : "Nama Supplier / Toko";
             notesLabel.textContent = "Catatan (Opsional)";
             submitButton.textContent = "Simpan Transaksi";
@@ -206,22 +261,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 const customNameInput = row.querySelector(".product-name-custom");
                 
                 if (isIncome) {
-                    // Tipe PEMASUKAN: Tampilkan dropdown produk
                     productSelect.classList.remove("hidden");
                     if (productSelect.value !== "other") {
                         customNameInput.classList.add("hidden");
                     }
                 } else {
-                    // Tipe PENGELUARAN: Sembunyikan dropdown, paksa input manual
                     productSelect.value = "other";
                     productSelect.classList.add("hidden");
                     customNameInput.classList.remove("hidden");
-                    customNameInput.value = ""; // Kosongkan input kustom
+                    customNameInput.value = "";
                 }
             });
             
             if (isIncome) {
-                updateProductDropdowns();
+                updateProductDropdowns(); // Perbarui dropdown produk
             }
         }
     };
@@ -315,7 +368,19 @@ document.addEventListener("DOMContentLoaded", () => {
         calculateTotal();
     };
 
-    // --- 4. Event Listeners ---
+    /**
+     * [BARU] Menampilkan/menyembunyikan Tgl Jatuh Tempo
+     */
+    const handlePaymentStatusChange = () => {
+        if (paymentStatusSelect.value === 'BELUM LUNAS') {
+            dueDateGroup.classList.remove("hidden");
+        } else {
+            dueDateGroup.classList.add("hidden");
+        }
+    };
+
+
+    // --- 5. Event Listeners ---
 
     /**
      * Menambahkan event listener ke semua input dinamis
@@ -339,7 +404,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // [DIUBAH] Listener untuk semua toggle
     typeIncome.addEventListener("change", updateFormForType);
     typeExpense.addEventListener("change", updateFormForType);
-    typeCapital.addEventListener("change", updateFormForType); // <-- BARU
+    typeCapital.addEventListener("change", updateFormForType);
+
+    // [BARU] Listener untuk Status Pembayaran
+    paymentStatusSelect.addEventListener("change", handlePaymentStatusChange);
 
     // Listener untuk tombol "Tambah Item"
     addItemButton.addEventListener("click", addNewItemRow);
@@ -364,7 +432,7 @@ document.addEventListener("DOMContentLoaded", () => {
             let payload = {}; // Siapkan payload kosong
 
             if (type === "CAPITAL") {
-                // --- [BARU] Payload untuk Tipe Modal ---
+                // --- Payload untuk Tipe Modal ---
                 const capitalAmount = parseFloat(formData.get("capital_amount"));
                 
                 if (capitalAmount <= 0) {
@@ -374,16 +442,24 @@ document.addEventListener("DOMContentLoaded", () => {
                 payload = {
                     type: type,
                     notes: notes,
-                    total_amount: capitalAmount, // Ambil dari input modal
-                    // [PERBAIKAN] Hapus `items: []` agar tidak gagal validasi 'min=1'
-                    customer_id: null // Modal tidak punya pelanggan
+                    total_amount: capitalAmount,
+                    customer_id: null,
+                    // [BARU] Modal selalu dianggap lunas dan tidak punya kategori
+                    payment_status: "LUNAS", 
+                    category_id: null,
                 };
 
             } else if (type === "INCOME" || type === "EXPENSE") {
-                // --- [LAMA] Payload untuk Tipe Pemasukan/Pengeluaran ---
+                // --- Payload untuk Tipe Pemasukan/Pengeluaran ---
                 const customerIDRaw = formData.get("customer_id");
                 const customerID = customerIDRaw ? parseInt(customerIDRaw, 10) : null;
                 
+                const categoryIDRaw = formData.get("category_id"); // [BARU]
+                const categoryID = categoryIDRaw ? parseInt(categoryIDRaw, 10) : null; // [BARU]
+
+                const paymentStatus = formData.get("payment_status"); // [BARU]
+                const dueDate = formData.get("due_date"); // [BARU]
+
                 const items = [];
                 const itemRows = document.querySelectorAll(".item-row");
                 
@@ -421,7 +497,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     customer_id: customerID, 
                     notes: notes,
                     items: items,
-                    // total_amount tidak perlu dikirim, akan dihitung di backend
+                    category_id: categoryID, // [BARU]
+                    payment_status: paymentStatus, // [BARU]
+                    due_date: dueDate || null, // [BARU]
                 };
             } else {
                 throw new Error("Tipe transaksi tidak dikenal.");
@@ -446,15 +524,32 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // --- 5. Inisialisasi Halaman ---
-    
-    // Muat daftar produk & pelanggan
-    loadProducts();
-    loadCustomers(); 
-    
-    // Set form ke status default (Pemasukan)
-    updateFormForType();
-    
-    // Hitung total (awal)
-    calculateTotal();
+    // --- 6. Inisialisasi Halaman ---
+
+    /**
+     * [BARU] Fungsi inisialisasi untuk memperbaiki race condition
+     * Memuat semua data SEBELUM merender form
+     */
+    const initializePage = async () => {
+        try {
+            // Jalankan semua proses load data secara paralel
+            await Promise.all([
+                loadProducts(),
+                loadCustomers(),
+                loadCategories()
+            ]);
+            
+            // Setelah SEMUA data siap, baru render form
+            updateFormForType();
+            calculateTotal();
+            
+        } catch (error) {
+            console.error("Gagal inisialisasi halaman:", error);
+            errorMessageEl.textContent = "Gagal memuat data awal. Coba refresh halaman.";
+            errorMessageEl.classList.remove("hidden");
+        }
+    };
+
+    // [DIUBAH] Panggil fungsi inisialisasi
+    initializePage();
 });
